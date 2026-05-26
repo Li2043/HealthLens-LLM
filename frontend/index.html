@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HealthSignal Workflow</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>HealthSignal Workflow</h1>
+      <p class="subtitle">
+        Python workflow prototype for LLM-assisted extraction, rule-based checks, and LLM safety testing.
+      </p>
+      <p class="notice">
+        Prototype only. Not medical advice. No personal health data is stored.
+      </p>
+    </header>
+
+    <main>
+      <section class="input-section">
+        <label for="health-input">Sample health input (demo only)</label>
+        <textarea
+          id="health-input"
+          rows="5"
+          placeholder="Try a sample below or enter your own demo text."
+        ></textarea>
+
+        <div class="sample-buttons">
+          <span class="sample-label">Try a sample:</span>
+          <button type="button" class="sample-btn" data-sample="low">Low risk</button>
+          <button type="button" class="sample-btn" data-sample="moderate">Moderate risk</button>
+          <button type="button" class="sample-btn" data-sample="high">High risk</button>
+          <button type="button" class="sample-btn" data-sample="bp200">Single BP (200)</button>
+        </div>
+
+        <button id="analyse-btn" type="button" class="primary-btn">Analyse</button>
+      </section>
+
+      <section id="loading" class="loading hidden">Analysing...</section>
+      <section id="error" class="error hidden"></section>
+
+      <section id="results" class="results hidden">
+        <div id="provider-status" class="provider-status"></div>
+
+        <div class="result-card risk-summary">
+          <h2>Risk Summary</h2>
+          <div id="risk-level-badge" class="risk-badge"></div>
+          <p id="incomplete-warning" class="warning-banner hidden">
+            Some measurements were incomplete or ambiguous.
+          </p>
+          <div id="detected-signals"></div>
+          <p id="extraction-note" class="summary-text muted hidden"></p>
+          <p id="rule-explanation" class="summary-text muted"></p>
+        </div>
+
+        <div class="result-card">
+          <h2>LLM Explanation</h2>
+          <p id="explanation"></p>
+        </div>
+
+        <div class="result-card">
+          <h2>Safety Check</h2>
+          <ul id="safety-check-list" class="check-list"></ul>
+        </div>
+
+        <details class="result-card technical-details">
+          <summary>Technical Details</summary>
+          <h3>Structured Input</h3>
+          <pre id="structured-input"></pre>
+          <h3>Risk Result</h3>
+          <pre id="risk-result"></pre>
+        </details>
+      </section>
+    </main>
+
+    <footer>
+      <p>Software engineering prototype — not a real health risk assessment tool.</p>
+    </footer>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
