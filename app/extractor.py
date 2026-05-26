@@ -5,20 +5,29 @@ import os
 import re
 from abc import ABC, abstractmethod
 
+from app.extraction_validator import validate_extraction
 from app.parser import parse_health_text
-from app.schemas import StructuredHealthInput
+from app.schemas import FieldEvidence, StructuredHealthInput
 
 EXTRACTOR_SYSTEM_PROMPT = """You extract structured health signals from free-text input.
+
 Rules:
 - Extract ONLY information explicitly present in the user input.
-- Do NOT infer diagnosis.
-- Do NOT provide advice.
-- Do NOT classify medical risk.
-- If only one blood pressure number is provided with a blood pressure phrase, set systolic_bp to that number, diastolic_bp to null, and add "diastolic_bp" to missing_or_ambiguous_fields.
-- If information is absent, use null.
-- Map "unhappy", "sad", "low", or "depressed" mood expressions to "low".
-- Map "can not sleep", "cannot sleep", "can't sleep", "insomnia", or "slept badly" to sleep_quality "poor".
-- Return ONLY valid JSON matching the schema.
+- Do NOT infer diagnosis, advice, or medical risk.
+- Distinguish absent, partial, and ambiguous information:
+  - absent: the user did not mention that measurement at all.
+  - partial: the user mentioned a measurement but gave incomplete numeric values.
+  - ambiguous: the user mentioned a measurement qualitatively without usable numbers.
+- Do NOT mark a field as missing unless the user attempted to provide that measurement.
+- Do NOT mark diastolic_bp as missing unless blood pressure was mentioned.
+- If blood pressure is not mentioned at all, leave systolic_bp and diastolic_bp null and do not include any blood pressure field in missing_or_ambiguous_fields.
+- If the user says "My blood pressure is 200", set systolic_bp=200, diastolic_bp=null, add diastolic_bp to missing_or_ambiguous_fields, status partial for blood pressure.
+- If the user says "BP 145/95", extract both values as complete.
+- If the user says "my blood pressure is high" without numbers, leave values null and mark blood pressure as ambiguous. Do not invent numbers.
+- Map unhappy/sad/low/depressed mood expressions to "low".
+- Map cannot sleep / can't sleep / insomnia / slept badly to sleep_quality "poor".
+- Provide source evidence text for every extracted field in field_evidence.
+- Return plain JSON only. No Markdown.
 """
 
 EXTRACTION_JSON_SCHEMA = {
@@ -39,6 +48,23 @@ EXTRACTION_JSON_SCHEMA = {
         "extraction_confidence": {"type": "string", "enum": ["high", "medium", "low"]},
         "missing_or_ambiguous_fields": {"type": "array", "items": {"type": "string"}},
         "extraction_notes": {"type": ["string", "null"]},
+        "field_evidence": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "field": {"type": "string"},
+                    "value": {"type": ["string", "null"]},
+                    "evidence": {"type": ["string", "null"]},
+                    "status": {
+                        "type": "string",
+                        "enum": ["absent", "partial", "complete", "ambiguous"],
+                    },
+                },
+                "required": ["field", "value", "evidence", "status"],
+                "additionalProperties": False,
+            },
+        },
     },
     "required": [
         "heart_rate",
@@ -50,6 +76,7 @@ EXTRACTION_JSON_SCHEMA = {
         "extraction_confidence",
         "missing_or_ambiguous_fields",
         "extraction_notes",
+        "field_evidence",
     ],
     "additionalProperties": False,
 }
@@ -65,46 +92,81 @@ def _normalize_text(text: str) -> str:
     return re.sub(r"\s+", " ", text.lower().strip().rstrip("."))
 
 
+def _finalize_extraction(text: str, result: StructuredHealthInput) -> StructuredHealthInput:
+    return validate_extraction(text, result)
+
+
+def _parse_field_evidence(raw_items: list[dict] | None) -> list[FieldEvidence]:
+    if not raw_items:
+        return []
+    return [FieldEvidence(**item) for item in raw_items]
+
+
 class MockLLMExtractor(BaseHealthExtractor):
     """Deterministic mock extractor for demo inputs and CI."""
 
-    _DEMO_OUTPUTS: dict[str, StructuredHealthInput] = {
-        "my blood pressure is 200": StructuredHealthInput(
-            systolic_bp=200,
-            symptoms=[],
-            extraction_confidence="medium",
-            missing_or_ambiguous_fields=["diastolic_bp"],
-            extraction_notes=(
-                "Detected a single blood pressure value as systolic blood pressure; "
-                "diastolic value was not provided."
-            ),
-        ),
-        "my heart rate is 100, i can not sleep, i am unhappy": StructuredHealthInput(
-            heart_rate=100,
-            mood="low",
-            sleep_quality="poor",
-            symptoms=[],
-            extraction_confidence="high",
-            missing_or_ambiguous_fields=[],
-            extraction_notes=None,
-        ),
-        "my heart rate is 125, blood pressure is 150/95, i feel anxious and i cannot sleep": StructuredHealthInput(
-            heart_rate=125,
-            systolic_bp=150,
-            diastolic_bp=95,
-            mood="anxious",
-            sleep_quality="poor",
-            symptoms=[],
-            extraction_confidence="high",
-            missing_or_ambiguous_fields=[],
-            extraction_notes=None,
-        ),
-    }
-
     def extract(self, text: str) -> StructuredHealthInput:
         normalized = _normalize_text(text)
-        if normalized in self._DEMO_OUTPUTS:
-            return self._DEMO_OUTPUTS[normalized].model_copy(deep=True)
+        if normalized == "my blood pressure is 200":
+            result = StructuredHealthInput(
+                systolic_bp=200,
+                symptoms=[],
+                extraction_confidence="medium",
+                missing_or_ambiguous_fields=["diastolic_bp"],
+                extraction_notes=(
+                    "Detected a single blood pressure value as systolic blood pressure; "
+                    "diastolic value was not provided."
+                ),
+            )
+            return _finalize_extraction(text, result)
+
+        if normalized == "my heart rate is 100, i can not sleep, i am unhappy":
+            result = StructuredHealthInput(
+                heart_rate=100,
+                mood="low",
+                sleep_quality="poor",
+                symptoms=[],
+                extraction_confidence="high",
+                missing_or_ambiguous_fields=[],
+                extraction_notes=None,
+            )
+            return _finalize_extraction(text, result)
+
+        if normalized == "my heart rate is 125, blood pressure is 150/95, i feel anxious and i cannot sleep":
+            result = StructuredHealthInput(
+                heart_rate=125,
+                systolic_bp=150,
+                diastolic_bp=95,
+                mood="anxious",
+                sleep_quality="poor",
+                symptoms=[],
+                extraction_confidence="high",
+                missing_or_ambiguous_fields=[],
+                extraction_notes=None,
+            )
+            return _finalize_extraction(text, result)
+
+        if normalized == "bp 145/95 and i feel anxious":
+            result = StructuredHealthInput(
+                systolic_bp=145,
+                diastolic_bp=95,
+                mood="anxious",
+                symptoms=[],
+                extraction_confidence="high",
+                missing_or_ambiguous_fields=[],
+                extraction_notes=None,
+            )
+            return _finalize_extraction(text, result)
+
+        if normalized == "my blood pressure is high":
+            result = StructuredHealthInput(
+                symptoms=[],
+                extraction_confidence="medium",
+                missing_or_ambiguous_fields=["blood_pressure"],
+                extraction_notes="Blood pressure was mentioned qualitatively without numeric values.",
+            )
+            return _finalize_extraction(text, result)
+
         return RegexFallbackExtractor().extract(text)
 
 
@@ -112,7 +174,7 @@ class RegexFallbackExtractor(BaseHealthExtractor):
     """Regex parser wrapper used when LLM extraction is unavailable or fails."""
 
     def extract(self, text: str) -> StructuredHealthInput:
-        return parse_health_text(text)
+        return _finalize_extraction(text, parse_health_text(text))
 
 
 class OpenAILLMExtractor(BaseHealthExtractor):
@@ -148,7 +210,9 @@ class OpenAILLMExtractor(BaseHealthExtractor):
                 },
             )
             data = json.loads(response.output_text)
-            return StructuredHealthInput(**data)
+            field_evidence = _parse_field_evidence(data.pop("field_evidence", []))
+            result = StructuredHealthInput(**data, extraction_evidence=field_evidence)
+            return _finalize_extraction(text, result)
         except Exception:
             fallback = self._fallback.extract(text)
             return fallback.model_copy(

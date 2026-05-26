@@ -204,6 +204,32 @@ textarea {
   margin-top: 0.25rem;
 }
 
+.evidence-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.evidence-list li {
+  padding: 0.45rem 0;
+  border-bottom: 1px solid #eef1f4;
+  font-size: 0.92rem;
+}
+
+.evidence-list li:last-child {
+  border-bottom: none;
+}
+
+.evidence-field {
+  font-weight: 600;
+  color: #0f3460;
+}
+
+.evidence-status {
+  color: #666;
+  font-size: 0.85rem;
+}
+
 .flag-list {
   margin: 0.25rem 0 0.75rem;
   padding-left: 1.25rem;

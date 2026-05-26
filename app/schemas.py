@@ -5,11 +5,19 @@ from pydantic import BaseModel, Field
 MoodValue = Literal["anxious", "stressed", "low", "calm", "unknown"]
 SleepQualityValue = Literal["good", "poor", "unknown"]
 ExtractionConfidence = Literal["high", "medium", "low"]
+MeasurementStatus = Literal["absent", "partial", "complete", "ambiguous"]
 RiskLevel = Literal["low", "moderate", "high"]
 
 
 class HealthInputRequest(BaseModel):
     text: str = Field(..., min_length=1, description="Free-text health input (demo/sample only)")
+
+
+class FieldEvidence(BaseModel):
+    field: str
+    value: Optional[str] = None
+    evidence: Optional[str] = None
+    status: MeasurementStatus
 
 
 class StructuredHealthInput(BaseModel):
@@ -22,6 +30,7 @@ class StructuredHealthInput(BaseModel):
     extraction_confidence: ExtractionConfidence = "low"
     missing_or_ambiguous_fields: list[str] = Field(default_factory=list)
     extraction_notes: Optional[str] = None
+    extraction_evidence: list[FieldEvidence] = Field(default_factory=list)
 
 
 class RiskResult(BaseModel):

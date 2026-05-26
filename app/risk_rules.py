@@ -1,5 +1,6 @@
 """Rule-based risk evaluation from structured health input."""
 
+from app.extraction_validator import blood_pressure_mentioned
 from app.schemas import RiskLevel, RiskResult, StructuredHealthInput
 
 _FLAG_DESCRIPTIONS = {
@@ -23,7 +24,7 @@ _CRITICAL_FLAGS = {
 _BORDERLINE_FLAGS = {"borderline_heart_rate"}
 
 
-def evaluate_risk(input: StructuredHealthInput) -> RiskResult:
+def evaluate_risk(input: StructuredHealthInput, source_text: str = "") -> RiskResult:
     """Evaluate risk flags and overall risk level from structured input."""
     flags: list[str] = []
 
@@ -59,7 +60,7 @@ def evaluate_risk(input: StructuredHealthInput) -> RiskResult:
         flags.append("incomplete_measurement")
 
     risk_level = _compute_risk_level(flags)
-    rule_explanation = _build_rule_explanation(flags, risk_level, input)
+    rule_explanation = _build_rule_explanation(flags, risk_level, input, source_text)
 
     return RiskResult(
         risk_level=risk_level,
@@ -81,17 +82,16 @@ def _compute_risk_level(flags: list[str]) -> RiskLevel:
         return "high"
 
     non_borderline = [flag for flag in flags if flag not in _BORDERLINE_FLAGS]
-    if len(non_borderline) >= 3:
-        return "high"
-    if 1 <= len(non_borderline) <= 2:
-        return "moderate"
-    return "low"
+    if not non_borderline:
+        return "low"
+    return "moderate"
 
 
 def _build_rule_explanation(
     flags: list[str],
     risk_level: RiskLevel,
     input: StructuredHealthInput,
+    source_text: str,
 ) -> str:
     if not flags:
         return (
@@ -107,7 +107,7 @@ def _build_rule_explanation(
         "This is a rule-based prototype result, not a clinical evaluation."
     )
 
-    if input.missing_or_ambiguous_fields:
+    if input.missing_or_ambiguous_fields and blood_pressure_mentioned(source_text):
         missing = ", ".join(input.missing_or_ambiguous_fields)
         explanation += f" Missing or ambiguous fields: {missing}."
 

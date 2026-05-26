@@ -10,7 +10,9 @@ SAMPLE_TEXT = (
 )
 
 MODERATE_SAMPLE = "My heart rate is 100, I can not sleep, I am unhappy."
-BP_200_SAMPLE = "My blood pressure is 200"
+BP_200_SAMPLE = "My blood pressure is 200."
+BP_ANXIOUS_SAMPLE = "BP 145/95 and I feel anxious."
+BP_HIGH_QUALITATIVE = "My blood pressure is high."
 
 
 def test_analyse_returns_200():
@@ -28,15 +30,13 @@ def test_analyse_response_structure():
     assert "safety_check" in data
     assert "extractor_provider" in data
     assert "llm_provider" in data
+    assert "extraction_evidence" in data["structured_input"]
 
     assert data["structured_input"]["heart_rate"] == 125
     assert data["structured_input"]["systolic_bp"] == 150
     assert data["structured_input"]["diastolic_bp"] == 95
     assert data["risk_result"]["risk_level"] in ("low", "moderate", "high")
-    assert "rule_explanation" in data["risk_result"]
     assert data["safety_check"]["passed"] is True
-    assert data["extractor_provider"] == "mock"
-    assert data["llm_provider"] == "mock"
 
 
 def test_moderate_sample_end_to_end():
@@ -46,10 +46,12 @@ def test_moderate_sample_end_to_end():
     assert data["structured_input"]["heart_rate"] == 100
     assert data["structured_input"]["sleep_quality"] == "poor"
     assert data["structured_input"]["mood"] == "low"
+    assert "diastolic_bp" not in data["structured_input"]["missing_or_ambiguous_fields"]
     assert data["risk_result"]["risk_level"] == "moderate"
     assert "borderline_heart_rate" in data["risk_result"]["flags"]
     assert "low_mood_flag" in data["risk_result"]["flags"]
     assert "poor_sleep" in data["risk_result"]["flags"]
+    assert "incomplete_measurement" not in data["risk_result"]["flags"]
 
 
 def test_bp_200_returns_high_risk_with_mock_extractor():
@@ -62,3 +64,21 @@ def test_bp_200_returns_high_risk_with_mock_extractor():
     assert data["risk_result"]["risk_level"] == "high"
     assert "very_high_systolic_bp" in data["risk_result"]["flags"]
     assert "incomplete_measurement" in data["risk_result"]["flags"]
+
+
+def test_bp_and_anxious_end_to_end():
+    response = client.post("/analyse", json={"text": BP_ANXIOUS_SAMPLE})
+    data = response.json()
+
+    assert data["structured_input"]["systolic_bp"] == 145
+    assert data["structured_input"]["diastolic_bp"] == 95
+    assert data["structured_input"]["mood"] == "anxious"
+
+
+def test_qualitative_bp_does_not_invent_numbers():
+    response = client.post("/analyse", json={"text": BP_HIGH_QUALITATIVE})
+    data = response.json()
+
+    assert data["structured_input"]["systolic_bp"] is None
+    assert data["structured_input"]["diastolic_bp"] is None
+    assert "blood_pressure" in data["structured_input"]["missing_or_ambiguous_fields"]

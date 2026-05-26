@@ -46,10 +46,10 @@ async def analyse(request: HealthInputRequest) -> AnalysisResponse:
     """
     extractor, extractor_provider, provider_warning = get_extractor()
     structured = extractor.extract(request.text)
-    risk_result = evaluate_risk(structured)
+    risk_result = evaluate_risk(structured, request.text)
 
     llm = get_llm_service()
-    explanation = llm.generate_explanation(structured, risk_result)
+    explanation = llm.generate_explanation(structured, risk_result, request.text)
     safety_check = validate_llm_output(explanation)
 
     return AnalysisResponse(

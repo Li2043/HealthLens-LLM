@@ -18,6 +18,14 @@ const FLAG_LABELS = {
   incomplete_measurement: "Incomplete measurement",
 };
 
+const FIELD_LABELS = {
+  heart_rate: "Heart rate",
+  systolic_bp: "Systolic BP",
+  diastolic_bp: "Diastolic BP",
+  mood: "Mood",
+  sleep_quality: "Sleep quality",
+};
+
 const inputEl = document.getElementById("health-input");
 const analyseBtn = document.getElementById("analyse-btn");
 const loadingEl = document.getElementById("loading");
@@ -28,6 +36,7 @@ const riskLevelBadgeEl = document.getElementById("risk-level-badge");
 const incompleteWarningEl = document.getElementById("incomplete-warning");
 const detectedSignalsEl = document.getElementById("detected-signals");
 const extractionNoteEl = document.getElementById("extraction-note");
+const extractionEvidenceEl = document.getElementById("extraction-evidence");
 const ruleExplanationEl = document.getElementById("rule-explanation");
 const explanationEl = document.getElementById("explanation");
 const safetyCheckListEl = document.getElementById("safety-check-list");
@@ -47,6 +56,15 @@ function showError(message) {
   show(errorEl);
 }
 
+function stripMarkdown(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/`(.*?)`/g, "$1")
+    .replace(/^#+\s*/gm, "")
+    .trim();
+}
+
 function formatFlagList(flags) {
   if (!flags || flags.length === 0) {
     return "<p class='summary-text'>No rule-based flags detected.</p>";
@@ -55,6 +73,25 @@ function formatFlagList(flags) {
     .map((flag) => `<li>${FLAG_LABELS[flag] || flag.replaceAll("_", " ")}</li>`)
     .join("");
   return `<p class='summary-text'><strong>Detected signals:</strong></p><ul class='flag-list'>${items}</ul>`;
+}
+
+function renderExtractionEvidence(evidence) {
+  if (!evidence || evidence.length === 0) {
+    extractionEvidenceEl.innerHTML = "<li>No extraction evidence available.</li>";
+    return;
+  }
+
+  extractionEvidenceEl.innerHTML = evidence
+    .map((item) => {
+      const label = FIELD_LABELS[item.field] || item.field;
+      const valueText =
+        item.status === "absent"
+          ? "not mentioned"
+          : item.value ?? "not mentioned";
+      const evidenceText = item.evidence ? `Source: "${item.evidence}"` : "Source: not available";
+      return `<li><span class="evidence-field">${label}:</span> ${valueText}. <span class="evidence-status">(${item.status}) ${evidenceText}</span></li>`;
+    })
+    .join("");
 }
 
 function renderProviderStatus(data) {
@@ -113,6 +150,7 @@ function renderResults(data) {
   }
 
   detectedSignalsEl.innerHTML = formatFlagList(risk_result.flags);
+  renderExtractionEvidence(structured_input.extraction_evidence);
 
   if (structured_input.extraction_notes) {
     extractionNoteEl.textContent = `Note: ${structured_input.extraction_notes}`;
@@ -123,7 +161,7 @@ function renderResults(data) {
   }
 
   ruleExplanationEl.textContent = risk_result.rule_explanation;
-  explanationEl.textContent = explanation;
+  explanationEl.textContent = stripMarkdown(explanation);
   renderSafetyCheck(safety_check);
 
   structuredInputEl.textContent = JSON.stringify(structured_input, null, 2);

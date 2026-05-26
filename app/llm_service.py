@@ -1,8 +1,10 @@
 """Extensible LLM provider for explaining rule-based risk results."""
 
 import os
+import re
 from abc import ABC, abstractmethod
 
+from app.extraction_validator import blood_pressure_mentioned
 from app.schemas import RiskResult, StructuredHealthInput
 
 SYSTEM_PROMPT = """You explain rule-based health signal results. You must:
@@ -10,8 +12,9 @@ SYSTEM_PROMPT = """You explain rule-based health signal results. You must:
 - NOT prescribe medication.
 - ALWAYS state this is not a medical diagnosis.
 - Recommend professional medical advice if symptoms are concerning, unusual, persistent, or worsening.
-- Use simple, calm language.
+- Use simple, calm plain text only. Do NOT use Markdown formatting.
 - Mention the detected rule-based flags in plain language.
+- Do NOT mention missing blood pressure unless blood pressure was mentioned in the original user input.
 - Base your explanation ONLY on the structured input and risk flags provided.
 """
 
@@ -31,12 +34,22 @@ _FLAG_PLAIN_LANGUAGE = {
 
 class LLMService(ABC):
     @abstractmethod
-    def generate_explanation(self, structured: StructuredHealthInput, risk: RiskResult) -> str:
+    def generate_explanation(
+        self, structured: StructuredHealthInput, risk: RiskResult, source_text: str = ""
+    ) -> str:
         pass
 
     def explain(self, structured: StructuredHealthInput, risk: RiskResult) -> str:
         """Backward-compatible alias."""
         return self.generate_explanation(structured, risk)
+
+
+def _strip_markdown(text: str) -> str:
+    cleaned = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
+    cleaned = re.sub(r"\*(.*?)\*", r"\1", cleaned)
+    cleaned = re.sub(r"`(.*?)`", r"\1", cleaned)
+    cleaned = re.sub(r"^#+\s*", "", cleaned, flags=re.MULTILINE)
+    return cleaned.strip()
 
 
 def _format_flags_plain(flags: list[str]) -> str:
@@ -48,16 +61,16 @@ def _format_flags_plain(flags: list[str]) -> str:
     return ", ".join(descriptions[:-1]) + f", and {descriptions[-1]}"
 
 
-def _format_signals(structured: StructuredHealthInput) -> str:
+def _format_signals(structured: StructuredHealthInput, source_text: str) -> str:
     signals: list[str] = []
     if structured.heart_rate is not None:
         signals.append(f"heart rate of {structured.heart_rate} bpm")
-    if structured.systolic_bp is not None:
-        if structured.diastolic_bp is not None:
+    if blood_pressure_mentioned(source_text):
+        if structured.systolic_bp is not None and structured.diastolic_bp is not None:
             signals.append(
                 f"blood pressure of {structured.systolic_bp}/{structured.diastolic_bp}"
             )
-        else:
+        elif structured.systolic_bp is not None:
             signals.append(f"systolic blood pressure of {structured.systolic_bp}")
     if structured.mood:
         signals.append(f"mood described as {structured.mood}")
@@ -71,8 +84,10 @@ def _format_signals(structured: StructuredHealthInput) -> str:
 class MockLLMService(LLMService):
     """Deterministic mock provider for testing and default operation."""
 
-    def generate_explanation(self, structured: StructuredHealthInput, risk: RiskResult) -> str:
-        signals_text = _format_signals(structured)
+    def generate_explanation(
+        self, structured: StructuredHealthInput, risk: RiskResult, source_text: str = ""
+    ) -> str:
+        signals_text = _format_signals(structured, source_text)
         flags_text = _format_flags_plain(risk.flags)
 
         parts = [
@@ -81,7 +96,7 @@ class MockLLMService(LLMService):
             risk.rule_explanation,
         ]
 
-        if structured.extraction_notes:
+        if structured.extraction_notes and blood_pressure_mentioned(source_text):
             parts.append(structured.extraction_notes + ".")
 
         parts.append(
@@ -90,7 +105,7 @@ class MockLLMService(LLMService):
             "please seek professional medical advice. "
             "This is not a medical diagnosis."
         )
-        return " ".join(parts)
+        return _strip_markdown(" ".join(parts))
 
 
 class OpenAILLMService(LLMService):
@@ -107,11 +122,14 @@ class OpenAILLMService(LLMService):
             self._client = OpenAI(api_key=self.api_key)
         return self._client
 
-    def generate_explanation(self, structured: StructuredHealthInput, risk: RiskResult) -> str:
+    def generate_explanation(
+        self, structured: StructuredHealthInput, risk: RiskResult, source_text: str = ""
+    ) -> str:
         user_prompt = (
+            f"Original user input: {source_text}\n"
             f"Structured input: {structured.model_dump_json()}\n"
             f"Risk result: {risk.model_dump_json()}\n"
-            "Provide a brief, calm explanation of these rule-based results. "
+            "Provide a brief, calm explanation of these rule-based results in plain text only. "
             "Mention the flags in plain language."
         )
 
@@ -121,7 +139,7 @@ class OpenAILLMService(LLMService):
             instructions=SYSTEM_PROMPT,
             input=user_prompt,
         )
-        return response.output_text
+        return _strip_markdown(response.output_text)
 
 
 def get_llm_service() -> LLMService:
