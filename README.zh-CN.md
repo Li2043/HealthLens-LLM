@@ -14,7 +14,7 @@
 
 ## 在线演示
 
-- **Live site:** `https://he-bebe657ef60745a09032e339f6e24a38.ecs.eu-west-2.on.aws/`
+- **Live site:** [HealthLens](https://he-bebe657ef60745a09032e339f6e24a38.ecs.eu-west-2.on.aws/)
 - **Health check:** `GET /health`
 - **API docs:** 如果 FastAPI 文档开启，可访问 `GET /docs`
 
