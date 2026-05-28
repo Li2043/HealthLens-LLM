@@ -7,113 +7,249 @@
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div class="header-top">
-        <h1 data-i18n="title">HealthLens-LLM</h1>
-        <button
-          type="button"
-          id="lang-toggle"
-          class="lang-toggle"
-          aria-label="Switch language"
-          aria-pressed="false"
-        >
-          <span class="lang-toggle-indicator"></span>
-          <span class="lang-toggle-option">EN</span>
-          <span class="lang-toggle-option">中文</span>
-        </button>
-      </div>
-      <p class="subtitle" data-i18n="subtitle">
-        Python workflow prototype for LLM-assisted extraction, rule-based checks, and LLM safety testing.
-      </p>
-      <p class="notice" data-i18n="notice">
-        Prototype only. Not medical advice. No personal health data is stored.
-      </p>
-    </header>
-
-    <main>
-      <section class="input-section">
-        <label for="health-input" data-i18n="inputLabel">Sample health input (demo only)</label>
-        <div class="textarea-wrap">
-          <textarea
-            id="health-input"
-            rows="5"
-            data-i18n-placeholder="inputPlaceholder"
-            placeholder="Try a sample below or enter your own demo text."
-          ></textarea>
+  <div class="page">
+    <div class="container">
+      <header class="hero">
+        <div class="header-top">
+          <div class="hero-text">
+            <p class="eyebrow" data-i18n="eyebrow">Health signal checker</p>
+            <h1 data-i18n="title">HealthLens-LLM</h1>
+            <p class="subtitle" data-i18n="subtitle">
+              AI-assisted health text signal checker
+            </p>
+            <p class="hero-description" data-i18n="heroDescription">
+              Paste a short health-related note to extract signals such as heart rate, blood pressure, sleep, and mood. The app combines rule-based checks with a safe LLM-generated explanation.
+            </p>
+          </div>
           <button
-            id="voice-btn"
             type="button"
-            class="voice-btn"
-            aria-label="Voice input"
+            id="lang-toggle"
+            class="lang-toggle"
+            aria-label="Switch language"
+            aria-pressed="false"
           >
-            <span class="voice-icon" aria-hidden="true">🎤</span>
-            <span id="voice-btn-text" data-i18n="voiceBtn">Voice input</span>
+            <span class="lang-toggle-indicator"></span>
+            <span class="lang-toggle-option" data-lang="en">EN</span>
+            <span class="lang-toggle-option" data-lang="zh">中文</span>
           </button>
         </div>
-        <p id="voice-unsupported" class="voice-note hidden" data-i18n="voiceUnsupported">
-          Voice input is not supported in this browser. Please type your text instead.
+        <p class="notice" data-i18n="notice">
+          This tool is a software demonstration only. It is not medical advice, diagnosis, or treatment guidance. If symptoms are severe, urgent, or worsening, seek professional medical help.
         </p>
-        <p id="voice-status" class="voice-status hidden" aria-live="polite"></p>
 
-        <div class="sample-buttons">
-          <span class="sample-label" data-i18n="trySample">Try a sample:</span>
-          <button type="button" class="sample-btn" data-sample="low" data-i18n="sampleLow">Low risk</button>
-          <button type="button" class="sample-btn" data-sample="moderate" data-i18n="sampleModerate">Moderate risk</button>
-          <button type="button" class="sample-btn" data-sample="high" data-i18n="sampleHigh">High risk</button>
-          <button type="button" class="sample-btn" data-sample="bp200" data-i18n="sampleBp200">Single BP (200)</button>
-        </div>
+        <nav class="app-tabs" aria-label="Main navigation">
+          <button type="button" class="app-tab is-active" data-tab="analyse" data-i18n="tabAnalyse">Analyse</button>
+          <button type="button" class="app-tab" data-tab="evaluation" data-i18n="tabEvaluation">Evaluation Lab</button>
+        </nav>
+      </header>
 
-        <button id="analyse-btn" type="button" class="primary-btn" data-i18n="analyseBtn">Analyse</button>
+      <div id="panel-analyse" class="app-panel">
+      <section class="how-to card">
+        <h2 class="section-title" data-i18n="howToUse">How to use</h2>
+        <ol class="steps-grid">
+          <li class="step-card">
+            <span class="step-number">1</span>
+            <h3 data-i18n="step1Title">Enter a short health note</h3>
+            <p data-i18n="step1Body">Example: “My heart rate is 100 and I can’t sleep.”</p>
+          </li>
+          <li class="step-card">
+            <span class="step-number">2</span>
+            <h3 data-i18n="step2Title">Click Analyse</h3>
+            <p data-i18n="step2Body">The app extracts health-related signals and applies rule-based checks.</p>
+          </li>
+          <li class="step-card">
+            <span class="step-number">3</span>
+            <h3 data-i18n="step3Title">Review the result</h3>
+            <p data-i18n="step3Body">See the risk summary, detected signals, evidence, and safety-conscious explanation.</p>
+          </li>
+        </ol>
       </section>
 
-      <section id="loading" class="loading hidden" data-i18n="loading">Analysing...</section>
-      <section id="error" class="error hidden"></section>
-
-      <section id="results" class="results hidden">
-        <div id="provider-status" class="provider-status"></div>
-
-        <div class="result-card risk-summary">
-          <h2 data-i18n="riskSummary">Risk Summary</h2>
-          <div id="risk-level-badge" class="risk-badge"></div>
-          <p id="incomplete-warning" class="warning-banner hidden" data-i18n="incompleteWarning">
-            Some measurements were incomplete or ambiguous.
+      <main>
+        <section class="input-card card">
+          <label for="health-input" class="input-label" data-i18n="inputLabel">Describe your health note</label>
+          <p class="input-helper" data-i18n="inputHelper">
+            Use short, plain language. Do not enter real personal medical information.
           </p>
-          <div id="detected-signals"></div>
-          <p id="extraction-note" class="summary-text muted hidden"></p>
-          <p id="rule-explanation" class="summary-text muted"></p>
-        </div>
 
-        <div class="result-card">
-          <h2 data-i18n="extractionEvidence">Extraction Evidence</h2>
-          <ul id="extraction-evidence" class="evidence-list"></ul>
-        </div>
+          <div class="textarea-wrap">
+            <textarea
+              id="health-input"
+              rows="5"
+              data-i18n-placeholder="inputPlaceholder"
+              placeholder="Describe how you feel, your sleep, heart rate, or blood pressure in a few sentences."
+            ></textarea>
+            <button
+              id="voice-btn"
+              type="button"
+              class="btn btn-secondary voice-btn"
+              aria-label="Voice input"
+            >
+              <span class="voice-icon" aria-hidden="true">🎙</span>
+              <span id="voice-btn-text" data-i18n="voiceBtn">Voice input</span>
+            </button>
+          </div>
 
-        <div class="result-card">
-          <h2 data-i18n="llmExplanation">LLM Explanation</h2>
-          <p id="explanation"></p>
-        </div>
+          <p id="voice-unsupported" class="voice-note hidden" data-i18n="voiceUnsupported">
+            Voice input is not supported in this browser. Please type your text instead.
+          </p>
+          <p id="voice-status" class="voice-status hidden" aria-live="polite"></p>
 
-        <div class="result-card">
-          <h2 data-i18n="safetyCheck">Safety Check</h2>
-          <ul id="safety-check-list" class="check-list"></ul>
-        </div>
+          <div class="sample-buttons">
+            <span class="sample-label" data-i18n="trySample">Try an example:</span>
+            <button type="button" class="sample-btn btn btn-ghost" data-sample="low" data-i18n="sampleLow">Mild symptoms</button>
+            <button type="button" class="sample-btn btn btn-ghost" data-sample="moderate" data-i18n="sampleModerate">Sleep and mood</button>
+            <button type="button" class="sample-btn btn btn-ghost" data-sample="high" data-i18n="sampleHigh">Higher-risk example</button>
+          </div>
 
-        <details class="result-card technical-details">
-          <summary data-i18n="technicalDetails">Technical Details</summary>
-          <h3 data-i18n="structuredInput">Structured Input</h3>
-          <pre id="structured-input"></pre>
-          <h3 data-i18n="riskResult">Risk Result</h3>
-          <pre id="risk-result"></pre>
-        </details>
-      </section>
-    </main>
+          <div class="action-row">
+            <button id="analyse-btn" type="button" class="btn btn-primary" data-i18n="analyseBtn">Analyse note</button>
+            <button id="clear-btn" type="button" class="btn btn-secondary" data-i18n="clearBtn">Clear</button>
+          </div>
+        </section>
 
-    <footer>
-      <p data-i18n="footer">Software engineering prototype — not a real health risk assessment tool.</p>
-    </footer>
+        <section id="empty-state" class="empty-state card">
+          <div class="empty-icon" aria-hidden="true">📋</div>
+          <h2 data-i18n="emptyTitle">Your analysis will appear here.</h2>
+          <p data-i18n="emptyBody">Try an example or enter your own note to begin.</p>
+        </section>
+
+        <section id="loading" class="loading-card card hidden" aria-live="polite">
+          <div class="loading-spinner" aria-hidden="true"></div>
+          <h2 data-i18n="loadingTitle">Analysing your note…</h2>
+          <p data-i18n="loadingBody">Extracting signals and generating a safe explanation.</p>
+        </section>
+
+        <section id="error" class="error-card card hidden" role="alert">
+          <h2 data-i18n="errorTitle">Analysis is temporarily unavailable.</h2>
+          <p id="error-message" data-i18n="errorBody">Please try again later.</p>
+        </section>
+
+        <section id="results" class="results hidden">
+          <article class="result-card summary-card">
+            <h2 data-i18n="resultSummary">Result summary</h2>
+            <div id="risk-level-badge" class="risk-badge"></div>
+            <p id="result-summary" class="result-summary-text"></p>
+            <p id="incomplete-warning" class="warning-banner hidden" data-i18n="incompleteWarning">
+              Some measurements were incomplete or ambiguous.
+            </p>
+          </article>
+
+          <article class="result-card">
+            <h2 data-i18n="detectedSignalsTitle">Detected signals</h2>
+            <ul id="signal-metrics" class="signal-metrics"></ul>
+            <div id="detected-signals-flags" class="signal-flags"></div>
+          </article>
+
+          <article class="result-card">
+            <h2 data-i18n="llmExplanation">Explanation</h2>
+            <p id="explanation" class="explanation-text"></p>
+          </article>
+
+          <article class="result-card">
+            <h2 data-i18n="extractionEvidence">Evidence</h2>
+            <ul id="extraction-evidence" class="evidence-list"></ul>
+          </article>
+
+          <article class="result-card safety-card">
+            <h2 data-i18n="safetyGuardrails">Safety guardrails</h2>
+            <p class="safety-lead" data-i18n="safetyGuardrailsText">
+              This response avoids diagnosis, medication instructions, and treatment advice.
+            </p>
+          </article>
+
+          <details class="result-card technical-details">
+            <summary data-i18n="technicalDetails">Technical details for reviewers</summary>
+            <div class="technical-section">
+              <h3 data-i18n="systemInfo">System information</h3>
+              <div id="provider-status" class="provider-status"></div>
+            </div>
+            <div class="technical-section">
+              <h3 data-i18n="safetyCheck">Safety validation</h3>
+              <ul id="safety-check-list" class="check-list"></ul>
+            </div>
+            <div class="technical-section">
+              <h3 data-i18n="ruleEngineNotes">Rule engine notes</h3>
+              <p id="rule-explanation" class="summary-text muted"></p>
+              <p id="extraction-note" class="summary-text muted hidden"></p>
+            </div>
+            <div class="technical-section">
+              <h3 data-i18n="structuredInput">Structured input</h3>
+              <pre id="structured-input"></pre>
+            </div>
+            <div class="technical-section">
+              <h3 data-i18n="riskResult">Risk result</h3>
+              <pre id="risk-result"></pre>
+            </div>
+          </details>
+        </section>
+      </main>
+      </div>
+
+      <div id="panel-evaluation" class="app-panel hidden">
+        <section class="eval-intro card">
+          <h2 class="section-title" data-i18n="evalTitle">Evaluation Lab</h2>
+          <p data-i18n="evalDescription">
+            Run a curated evaluation suite to test risk classification, signal extraction, safety guardrails, latency, and failure handling.
+          </p>
+          <p class="eval-note" data-i18n="evalMockNote">
+            Mock mode is free, deterministic, and recommended for regression testing.
+          </p>
+          <div class="action-row">
+            <button id="run-eval-btn" type="button" class="btn btn-primary" data-i18n="evalRunBtn">Run evaluation (mock)</button>
+            <button id="run-eval-openai-btn" type="button" class="btn btn-secondary" data-i18n="evalRunOpenaiBtn">Run evaluation (OpenAI)</button>
+          </div>
+          <p class="eval-openai-warning" data-i18n="evalOpenaiWarning">
+            OpenAI mode calls the live API for extraction and explanation. It may use tokens and can produce different results from mock mode.
+          </p>
+        </section>
+
+        <section id="eval-loading" class="loading-card card hidden" aria-live="polite">
+          <div class="loading-spinner" aria-hidden="true"></div>
+          <h2 id="eval-loading-title" data-i18n="evalLoadingTitle">Running evaluation suite…</h2>
+          <p id="eval-loading-body" data-i18n="evalLoadingBody">Executing curated cases against the mock provider workflow.</p>
+        </section>
+
+        <section id="eval-error" class="error-card card hidden" role="alert">
+          <h2 data-i18n="evalErrorTitle">Evaluation could not be completed.</h2>
+          <p id="eval-error-message"></p>
+        </section>
+
+        <section id="eval-results" class="hidden">
+          <p id="eval-provider-banner" class="eval-provider-banner hidden"></p>
+          <div id="eval-summary" class="metric-grid"></div>
+          <div class="result-card">
+            <h2 data-i18n="evalResultsTitle">Case results</h2>
+            <div class="table-wrap">
+              <table class="eval-table">
+                <thead>
+                  <tr>
+                    <th data-i18n="evalColCase">Case</th>
+                    <th data-i18n="evalColCategory">Category</th>
+                    <th data-i18n="evalColExpected">Expected</th>
+                    <th data-i18n="evalColActual">Actual</th>
+                    <th data-i18n="evalColSignals">Signals</th>
+                    <th data-i18n="evalColSafety">Safety</th>
+                    <th data-i18n="evalColStatus">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="eval-results-body"></tbody>
+              </table>
+            </div>
+          </div>
+          <div id="eval-case-details" class="eval-details-list"></div>
+        </section>
+      </div>
+
+      </div>
+
+      <footer>
+        <p data-i18n="footer">Built as a software engineering portfolio demo — not a clinical product.</p>
+      </footer>
+    </div>
   </div>
 
   <script src="/static/app.js"></script>
+  <script src="/static/evaluation.js"></script>
 </body>
 </html>

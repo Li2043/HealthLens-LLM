@@ -40,9 +40,34 @@ def test_serve_frontend():
     assert "HealthLens-LLM" in response.text
 
 
+def test_analyse_returns_chinese_explanation_when_requested():
+    response = client.post(
+        "/analyse",
+        json={"text": MODERATE_SAMPLE, "language": "zh"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "规则引擎" in data["explanation"] or "风险" in data["explanation"]
+    assert "Rule engine detected" not in data["explanation"]
+    assert "规则引擎" in data["risk_result"]["rule_explanation"]
+
+
 def test_analyse_returns_200():
     response = client.post("/analyse", json={"text": SAMPLE_TEXT})
     assert response.status_code == 200
+
+
+def test_analyse_chinese_localizes_extraction_evidence_values():
+    response = client.post(
+        "/analyse",
+        json={"text": MODERATE_SAMPLE, "language": "zh"},
+    )
+    data = response.json()
+    evidence = data["structured_input"]["extraction_evidence"]
+    mood_item = next(item for item in evidence if item["field"] == "mood")
+    sleep_item = next(item for item in evidence if item["field"] == "sleep_quality")
+    assert mood_item["value"] == "低落"
+    assert sleep_item["value"] == "不佳"
 
 
 def test_analyse_response_structure():
@@ -62,6 +87,19 @@ def test_analyse_response_structure():
     assert data["structured_input"]["diastolic_bp"] == 95
     assert data["risk_result"]["risk_level"] in ("low", "moderate", "high")
     assert data["safety_check"]["passed"] is True
+
+
+def test_chinese_moderate_sample_end_to_end():
+    response = client.post(
+        "/analyse",
+        json={"text": "我的心率是100，我睡不着，心情不好。", "language": "zh"},
+    )
+    data = response.json()
+
+    assert response.status_code == 200
+    assert data["structured_input"]["heart_rate"] == 100
+    assert data["structured_input"]["sleep_quality"] == "poor"
+    assert data["risk_result"]["risk_level"] == "moderate"
 
 
 def test_moderate_sample_end_to_end():

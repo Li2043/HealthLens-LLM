@@ -89,7 +89,7 @@ class BaseHealthExtractor(ABC):
 
 
 def _normalize_text(text: str) -> str:
-    return re.sub(r"\s+", " ", text.lower().strip().rstrip("."))
+    return re.sub(r"\s+", " ", text.lower().strip().rstrip(".。"))
 
 
 def _finalize_extraction(text: str, result: StructuredHealthInput) -> StructuredHealthInput:
@@ -120,7 +120,10 @@ class MockLLMExtractor(BaseHealthExtractor):
             )
             return _finalize_extraction(text, result)
 
-        if normalized == "my heart rate is 100, i can not sleep, i am unhappy":
+        if normalized in {
+            "my heart rate is 100, i can not sleep, i am unhappy",
+            "我的心率是100，我睡不着，心情不好",
+        }:
             result = StructuredHealthInput(
                 heart_rate=100,
                 mood="low",
@@ -132,13 +135,33 @@ class MockLLMExtractor(BaseHealthExtractor):
             )
             return _finalize_extraction(text, result)
 
-        if normalized == "my heart rate is 125, blood pressure is 150/95, i feel anxious and i cannot sleep":
+        if normalized in {
+            "my heart rate is 125, blood pressure is 150/95, i feel anxious and i cannot sleep",
+            "我的心率是125，血压是150/95，我感到焦虑，而且睡不着",
+        }:
             result = StructuredHealthInput(
                 heart_rate=125,
                 systolic_bp=150,
                 diastolic_bp=95,
                 mood="anxious",
                 sleep_quality="poor",
+                symptoms=[],
+                extraction_confidence="high",
+                missing_or_ambiguous_fields=[],
+                extraction_notes=None,
+            )
+            return _finalize_extraction(text, result)
+
+        if normalized in {
+            "my heart rate is 72, blood pressure is 118/76, i feel calm and slept well",
+            "我的心率是72，血压是118/76，我感觉很平静，睡眠很好",
+        }:
+            result = StructuredHealthInput(
+                heart_rate=72,
+                systolic_bp=118,
+                diastolic_bp=76,
+                mood="calm",
+                sleep_quality="good",
                 symptoms=[],
                 extraction_confidence="high",
                 missing_or_ambiguous_fields=[],

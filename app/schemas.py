@@ -9,8 +9,12 @@ MeasurementStatus = Literal["absent", "partial", "complete", "ambiguous"]
 RiskLevel = Literal["low", "moderate", "high"]
 
 
+Language = Literal["en", "zh"]
+
+
 class HealthInputRequest(BaseModel):
     text: str = Field(..., description="Free-text health input (demo/sample only)")
+    language: Language = Field(default="en", description="Response language: en or zh")
 
 
 class FieldEvidence(BaseModel):

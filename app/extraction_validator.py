@@ -4,7 +4,7 @@ import re
 
 from app.schemas import FieldEvidence, MeasurementStatus, StructuredHealthInput
 
-_BP_MENTION = re.compile(r"blood\s*pressure|\bbp\b", re.IGNORECASE)
+_BP_MENTION = re.compile(r"blood\s*pressure|\bbp\b|血压", re.IGNORECASE)
 _BP_SLASH = re.compile(r"(\d{2,3})\s*/\s*(\d{2,3})")
 _BP_SINGLE = re.compile(
     r"(?:blood\s*pressure|bp)\s*(?:is|:)?\s*(\d{2,3})(?!\s*/|\s+over)",
@@ -14,9 +14,9 @@ _BP_QUALITATIVE = re.compile(
     r"(?:blood\s*pressure|bp)\s*(?:is|:)?\s*(?:high|low|elevated|raised)",
     re.IGNORECASE,
 )
-_HR_MENTION = re.compile(r"heart\s*rate|heartbeat|\bhr\b|pulse", re.IGNORECASE)
+_HR_MENTION = re.compile(r"heart\s*rate|heartbeat|\bhr\b|pulse|心率", re.IGNORECASE)
 _HR_VALUE = re.compile(
-    r"(?:heart\s*rate|heartbeat|hr|pulse)\s*(?:is|:)?\s*(\d{2,3})",
+    r"(?:heart\s*rate|heartbeat|hr|pulse|心率)\s*(?:is|是|:)?\s*(\d{2,3})",
     re.IGNORECASE,
 )
 
@@ -162,14 +162,14 @@ def _find_mood_evidence(text: str, mood: str | None) -> str | None:
     if not mood:
         return None
     keywords = {
-        "anxious": ["anxious", "worried", "panic"],
-        "stressed": ["stressed", "stress"],
-        "low": ["unhappy", "sad", "low", "depressed"],
-        "calm": ["calm", "relaxed"],
+        "anxious": ["anxious", "worried", "panic", "焦虑"],
+        "stressed": ["stressed", "stress", "压力"],
+        "low": ["unhappy", "sad", "low", "depressed", "心情不好", "不开心", "难过", "低落"],
+        "calm": ["calm", "relaxed", "平静"],
     }
     lower = text.lower()
     for keyword in keywords.get(mood, [mood]):
-        idx = lower.find(keyword)
+        idx = lower.find(keyword.lower()) if keyword.isascii() else text.find(keyword)
         if idx >= 0:
             return text[idx : idx + len(keyword)]
     return None
@@ -187,6 +187,10 @@ def _find_sleep_evidence(text: str, sleep_quality: str | None) -> str | None:
         r"\binsomnia\b",
         r"slept\s+well",
         r"good\s+sleep",
+        r"睡不着",
+        r"失眠",
+        r"睡眠很好",
+        r"睡得好",
     ]
     for pattern in patterns:
         match = re.search(pattern, text, re.IGNORECASE)

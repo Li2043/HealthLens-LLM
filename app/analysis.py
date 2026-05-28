@@ -2,13 +2,14 @@
 
 from app.errors import AnalysisPipelineError, ProviderConfigurationError
 from app.extractor import get_extractor
+from app.localization import localize_provider_warning, localize_structured_input
 from app.llm_service import get_llm_provider_name, get_llm_service
 from app.risk_rules import evaluate_risk
 from app.safety_validator import validate_llm_output
-from app.schemas import AnalysisResponse
+from app.schemas import AnalysisResponse, Language
 
 
-def run_analysis(text: str) -> AnalysisResponse:
+def run_analysis(text: str, language: Language = "en") -> AnalysisResponse:
     """
     Run extraction, rule-based risk, LLM explanation, and safety validation.
 
@@ -16,11 +17,11 @@ def run_analysis(text: str) -> AnalysisResponse:
     """
     try:
         extractor, extractor_provider, provider_warning = get_extractor()
-        structured = extractor.extract(text)
-        risk_result = evaluate_risk(structured, text)
+        structured = localize_structured_input(extractor.extract(text), language)
+        risk_result = evaluate_risk(structured, text, language=language)
 
         llm = get_llm_service()
-        explanation = llm.generate_explanation(structured, risk_result, text)
+        explanation = llm.generate_explanation(structured, risk_result, text, language=language)
         safety_check = validate_llm_output(explanation)
 
         return AnalysisResponse(
@@ -30,7 +31,7 @@ def run_analysis(text: str) -> AnalysisResponse:
             safety_check=safety_check,
             extractor_provider=extractor_provider,
             llm_provider=get_llm_provider_name(),
-            provider_warning=provider_warning,
+            provider_warning=localize_provider_warning(provider_warning, language),
         )
     except ProviderConfigurationError:
         raise

@@ -17,20 +17,21 @@ from app.config import (
     APP_VERSION,
     EXTRACTOR_PROVIDER,
     LLM_PROVIDER,
-    MAX_INPUT_CHARS,
     SERVICE_NAME,
     is_openai_provider_misconfigured,
 )
 from app.errors import (
     ANALYSIS_FAILED_ERROR,
     ANALYSIS_TIMEOUT_ERROR,
-    EMPTY_INPUT_ERROR,
-    INPUT_TOO_LARGE_ERROR,
     PROVIDER_CONFIGURATION_ERROR,
     AnalysisPipelineError,
     ProviderConfigurationError,
 )
+from app.evaluation.cases import get_evaluation_cases
+from app.evaluation.runner import resolve_evaluation_provider, run_evaluation_suite
+from app.evaluation.schemas import EvaluationCasePublic
 from app.schemas import HealthInputRequest
+from app.validation import validate_analysis_input
 
 logger = logging.getLogger(__name__)
 
@@ -109,14 +110,6 @@ async def serve_frontend():
 app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
 
-def validate_analysis_input(text: str) -> JSONResponse | None:
-    if not text.strip():
-        return EMPTY_INPUT_ERROR
-    if len(text) > MAX_INPUT_CHARS:
-        return INPUT_TOO_LARGE_ERROR
-    return None
-
-
 @app.post("/analyse")
 async def analyse(request: HealthInputRequest):
     """
@@ -133,7 +126,7 @@ async def analyse(request: HealthInputRequest):
 
     try:
         return await asyncio.wait_for(
-            asyncio.to_thread(run_analysis, request.text.strip()),
+            asyncio.to_thread(run_analysis, request.text.strip(), request.language),
             timeout=ANALYSE_TIMEOUT_SECONDS,
         )
     except asyncio.TimeoutError:
@@ -148,3 +141,51 @@ async def analyse(request: HealthInputRequest):
     except Exception:
         logger.exception("Unexpected analysis failure")
         return ANALYSIS_FAILED_ERROR
+
+
+@app.get("/evaluation/cases")
+async def list_evaluation_cases() -> list[EvaluationCasePublic]:
+    """Return curated evaluation cases without running them."""
+    return [
+        EvaluationCasePublic(
+            id=case.id,
+            name=case.name,
+            category=case.category,
+            input_text=case.input_text,
+            expected_risk_level=case.expected_risk_level,
+            expected_signals=case.expected_signals,
+            expected_safety_behaviour=case.expected_safety_behaviour,
+            notes=case.notes,
+        )
+        for case in get_evaluation_cases()
+    ]
+
+
+@app.post("/evaluation/run")
+async def run_evaluation(provider: str = "mock"):
+    """
+    Run the curated evaluation suite.
+
+    Defaults to mock provider for repeatable, token-free evaluation.
+    """
+    try:
+        resolve_evaluation_provider(provider)
+    except ValueError as exc:
+        return JSONResponse(
+            status_code=400,
+            content={"error": {"code": "INVALID_PROVIDER", "message": str(exc)}},
+        )
+
+    try:
+        return await asyncio.to_thread(run_evaluation_suite, provider)
+    except Exception:
+        logger.exception("Evaluation suite failed")
+        return JSONResponse(
+            status_code=503,
+            content={
+                "error": {
+                    "code": "EVALUATION_FAILED",
+                    "message": "The evaluation suite could not be completed.",
+                }
+            },
+        )

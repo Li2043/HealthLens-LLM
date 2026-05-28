@@ -57,7 +57,7 @@ def test_analyse_whitespace_only_input_returns_400():
 
 
 def test_analyse_input_too_large_returns_413(monkeypatch):
-    monkeypatch.setattr("app.main.MAX_INPUT_CHARS", 20)
+    monkeypatch.setattr("app.config.MAX_INPUT_CHARS", 20)
     response = client.post("/analyse", json={"text": "x" * 21})
     assert response.status_code == 413
     data = response.json()
@@ -66,7 +66,7 @@ def test_analyse_input_too_large_returns_413(monkeypatch):
 
 
 def test_analyse_timeout_returns_504(monkeypatch):
-    def slow_analysis(text: str):
+    def slow_analysis(text: str, language: str = "en"):
         time.sleep(0.2)
         return {"should": "not reach"}
 
@@ -81,7 +81,7 @@ def test_analyse_timeout_returns_504(monkeypatch):
 
 
 def test_analyse_provider_exception_returns_controlled_error(monkeypatch):
-    def failing_analysis(text: str):
+    def failing_analysis(text: str, language: str = "en"):
         raise AnalysisPipelineError from RuntimeError("OpenAI secret sk-live-abc123 exploded")
 
     monkeypatch.setattr("app.main.run_analysis", failing_analysis)
@@ -95,7 +95,7 @@ def test_analyse_provider_exception_returns_controlled_error(monkeypatch):
 
 
 def test_analyse_provider_configuration_error(monkeypatch):
-    def misconfigured_analysis(text: str):
+    def misconfigured_analysis(text: str, language: str = "en"):
         raise ProviderConfigurationError("OPENAI_API_KEY missing")
 
     monkeypatch.setattr("app.main.run_analysis", misconfigured_analysis)

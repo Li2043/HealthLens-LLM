@@ -29,3 +29,18 @@ def test_mock_llm_includes_disclaimer():
 
     result = service.explain(structured, risk)
     assert "not a medical diagnosis" in result.lower()
+
+
+def test_mock_llm_returns_chinese_explanation():
+    service = MockLLMService()
+    structured = StructuredHealthInput(heart_rate=110)
+    risk = RiskResult(
+        risk_level="moderate",
+        flags=["elevated_heart_rate"],
+        rule_explanation="规则引擎检测到 1 个标志：心率超过 100 次/分。总体风险等级为中。",
+    )
+
+    result = service.generate_explanation(structured, risk, language="zh")
+
+    assert "根据示例输入" in result
+    assert "这不是医疗诊断" in result
