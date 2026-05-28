@@ -1,56 +1,48 @@
 # HealthLens-LLM
 
-**HealthLens-LLM** is a portfolio-ready software engineering prototype that demonstrates how to build a safe health-input workflow with LLM assistance. It parses free-text health signals, applies transparent rule-based checks, generates LLM explanations, validates output safety, and ships with automated tests and CI/CD.
+**HealthLens-LLM** is a portfolio-ready software engineering prototype that demonstrates how to build a safe health-input workflow with LLM assistance. It parses free-text health signals, applies transparent rule-based checks, generates LLM explanations, validates output safety, and ships with automated tests, Docker, and CI/CD.
 
 > **Disclaimer:** This is **not** a medical device, **not** medical advice, and **must not** be used for real clinical decisions. Use demo/sample inputs only. No personal health data is stored.
 
 ---
 
-## 项目简介 / Project Purpose
+## Live Demo
 
-HealthLens-LLM 展示一种可测试、可演示的健康信息处理流水线：
-
-1. **Extract（结构化提取）** — 使用 LLM（或 mock 提供者）将自由文本转换为结构化 JSON  
-2. **Evaluate（规则评估）** — 透明规则引擎计算 risk flags 与 risk level  
-3. **Explain（结果解释）** — LLM 用通俗语言解释规则结果  
-4. **Validate（安全校验）** — 检查输出是否包含免责声明，是否出现诊断或用药建议  
-
-**核心设计原则：** LLM 负责提取与解释；**风险判定始终由规则引擎完成**，LLM 不独立做医疗决策。
-
-This project is designed for:
-
-- Portfolio demonstrations of Python backend workflow automation  
-- LLM safety testing patterns (disclaimer checks, prohibited phrase detection)  
-- CI-friendly deterministic mock providers for reproducible demos and tests  
+Live demo: pending AWS ECS Express Mode deployment
 
 ---
 
 ## Architecture
 
 ```
-User input (free text)
-        │
-        ▼
-┌───────────────────┐
-│  Health Extractor │  mock | openai | regex fallback
-└─────────┬─────────┘
-          ▼
-┌───────────────────┐
-│   Rule Engine     │  flags + risk level (deterministic)
-└─────────┬─────────┘
-          ▼
-┌───────────────────┐
-│  LLM Explanation  │  mock | openai
-└─────────┬─────────┘
-          ▼
-┌───────────────────┐
-│ Safety Validator  │  disclaimer + diagnostic/medication checks
-└─────────┬─────────┘
-          ▼
-     JSON response
+Browser -> FastAPI frontend/API -> OpenAI extraction/explanation -> rule engine -> safety validator -> JSON response
 ```
 
+Detailed pipeline:
+
+1. **Extract** — LLM or mock provider converts free text into structured JSON
+2. **Evaluate** — rule engine calculates risk flags and risk level
+3. **Explain** — LLM describes rule-based results in plain language
+4. **Validate** — safety checks block diagnostic or medication language
+
+The LLM extracts and explains. **Risk level is always determined by the rule engine.**
+
 All processing happens **in memory only**. Nothing is persisted to a database or disk.
+
+---
+
+## Portfolio Skills Demonstrated
+
+- Python
+- FastAPI
+- Pydantic
+- REST API design
+- Docker
+- AWS ECS / ECR
+- CI with GitHub Actions
+- Testing with pytest
+- Environment-based configuration
+- LLM safety validation
 
 ---
 
@@ -63,8 +55,9 @@ All processing happens **in memory only**. Nothing is persisted to a database or
 | Risk engine | Rule-based flags (`risk_rules.py`) |
 | Explanation | MockLLMService, OpenAILLMService |
 | Safety | Regex phrase validation (`safety_validator.py`) |
-| Frontend | HTML, CSS, vanilla JavaScript |
-| Testing | pytest (26 tests, live OpenAI tests optional) |
+| Frontend | HTML, CSS, vanilla JavaScript served by FastAPI |
+| Container | Docker |
+| Testing | pytest |
 | CI/CD | GitHub Actions |
 
 ---
@@ -74,8 +67,8 @@ All processing happens **in memory only**. Nothing is persisted to a database or
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/Li2043/HealthLens-LLM.git
-cd HealthLens-LLM
+git clone https://github.com/Li2043/HealthLens----LLM.git
+cd HealthLens----LLM
 python -m venv .venv
 
 # Windows
@@ -90,16 +83,40 @@ pip install -r requirements.txt
 ### 2. Run the web demo
 
 ```bash
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --env-file .env
 ```
 
-Open [http://127.0.0.1:8000](http://127.0.0.1:8000) and try the sample buttons (Low / Moderate / High / Single BP 200).
+Open [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
 ### 3. Run tests
 
 ```bash
 pytest -v
 ```
+
+### 4. Run with Docker
+
+```bash
+docker build -t healthlens-llm .
+docker run --rm -p 8000:8000 --env-file .env healthlens-llm
+```
+
+Health check:
+
+```bash
+curl http://localhost:8000/health
+```
+
+---
+
+## AWS Deployment
+
+See [docs/DEPLOYMENT_AWS_ECS_EXPRESS.md](docs/DEPLOYMENT_AWS_ECS_EXPRESS.md) for:
+
+- Docker build and local test commands
+- pushing the image to Amazon ECR
+- running the app with ECS Express Mode over HTTPS
+- setting runtime environment variables safely in AWS
 
 ---
 
@@ -111,16 +128,22 @@ Copy `.env.example` to `.env`:
 |----------|---------|-------------|
 | `EXTRACTOR_PROVIDER` | `mock` | `mock`, `openai`, or `regex` |
 | `LLM_PROVIDER` | `mock` | `mock` or `openai` |
-| `OPENAI_API_KEY` | — | Required for OpenAI providers |
+| `OPENAI_API_KEY` | — | Required for OpenAI providers; set in AWS for production |
 | `RUN_LIVE_LLM_TESTS` | `false` | Set `true` to run optional live OpenAI tests |
 
-If `EXTRACTOR_PROVIDER=openai` but the API key is missing, the app falls back to the mock extractor and returns a `provider_warning`.
+Never commit `.env` or real API keys.
 
 ---
 
-## API Example
+## API Endpoints
 
-**Request**
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/` | Frontend UI |
+| `GET` | `/health` | Health check for containers and load balancers |
+| `POST` | `/analyse` | Run extraction, rules, explanation, and safety validation |
+
+**Example**
 
 ```http
 POST /analyse
@@ -128,25 +151,6 @@ Content-Type: application/json
 
 {
   "text": "My blood pressure is 200"
-}
-```
-
-**Response (abbreviated)**
-
-```json
-{
-  "structured_input": {
-    "systolic_bp": 200,
-    "diastolic_bp": null,
-    "missing_or_ambiguous_fields": ["diastolic_bp"],
-    "extraction_confidence": "medium"
-  },
-  "risk_result": {
-    "risk_level": "high",
-    "flags": ["very_high_systolic_bp", "elevated_blood_pressure", "incomplete_measurement"]
-  },
-  "extractor_provider": "mock",
-  "llm_provider": "mock"
 }
 ```
 
@@ -167,38 +171,24 @@ Content-Type: application/json
 ```
 HealthLens-LLM/
 ├── app/
-│   ├── extractor.py        # LLM-assisted structured extraction
-│   ├── risk_rules.py       # Rule-based risk engine
-│   ├── llm_service.py      # LLM explanation layer
-│   ├── safety_validator.py # Output safety checks
-│   ├── parser.py           # Regex fallback parser
-│   └── main.py             # FastAPI application
-├── frontend/               # Static demo UI
-├── tests/                  # pytest suite
-├── .github/workflows/      # CI pipeline
+├── frontend/
+├── tests/
+├── docs/
+│   └── DEPLOYMENT_AWS_ECS_EXPRESS.md
+├── Dockerfile
+├── .dockerignore
 ├── requirements.txt
-└── .env.example
+└── .github/workflows/ci.yml
 ```
 
 ---
 
 ## Safety & Privacy
 
-- Does **not** diagnose disease or prescribe medication  
-- Always includes *"This is not a medical diagnosis"* in explanations  
-- Processes requests **in memory only** — no database, no user accounts, no history  
-- Intended for **demo/sample inputs** in portfolio and engineering contexts  
-
----
-
-## Roadmap
-
-- Voice input  
-- Secure user history  
-- Encrypted database storage  
-- Cloud deployment (e.g. AWS)  
-- Stronger LLM evaluation / red-teaming  
-- Frontend UX improvements  
+- Does **not** diagnose disease or prescribe medication
+- Always includes *"This is not a medical diagnosis"* in explanations
+- Processes requests **in memory only** — no database, no user accounts, no history
+- Intended for **demo/sample inputs** in portfolio and engineering contexts
 
 ---
 

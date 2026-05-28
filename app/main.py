@@ -14,9 +14,9 @@ from app.safety_validator import validate_llm_output
 from app.schemas import AnalysisResponse, HealthInputRequest
 
 app = FastAPI(
-    title="HealthSignal Workflow",
+    title="HealthLens-LLM",
     description="Prototype health-input workflow automation. Not medical advice.",
-    version="0.3.0",
+    version="0.3.1",
 )
 
 app.add_middleware(
@@ -27,6 +27,12 @@ app.add_middleware(
 )
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+
+
+@app.get("/health")
+async def health() -> dict[str, str]:
+    """Lightweight health check for load balancers and container orchestration."""
+    return {"status": "ok", "service": "healthlens-llm"}
 
 
 @app.get("/")

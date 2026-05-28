@@ -15,6 +15,18 @@ BP_ANXIOUS_SAMPLE = "BP 145/95 and I feel anxious."
 BP_HIGH_QUALITATIVE = "My blood pressure is high."
 
 
+def test_health_endpoint():
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok", "service": "healthlens-llm"}
+
+
+def test_serve_frontend():
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "HealthSignal Workflow" in response.text
+
+
 def test_analyse_returns_200():
     response = client.post("/analyse", json={"text": SAMPLE_TEXT})
     assert response.status_code == 200
