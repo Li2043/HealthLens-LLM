@@ -280,6 +280,10 @@ function handleSpeechError(errorCode) {
   setVoiceStatus(errorMessages[errorCode] || t("voiceErrGeneric"), true);
 }
 
+function getSpeechRecognitionLang() {
+  return currentLang === "zh" ? "zh-CN" : "en-GB";
+}
+
 function initSpeechRecognition() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
@@ -292,7 +296,7 @@ function initSpeechRecognition() {
   show(voiceBtn);
 
   speechRecognition = new SpeechRecognition();
-  speechRecognition.lang = "en-GB";
+  speechRecognition.lang = getSpeechRecognitionLang();
   speechRecognition.interimResults = true;
   speechRecognition.continuous = false;
 
@@ -346,7 +350,7 @@ function initSpeechRecognition() {
 
     hide(errorEl);
     voiceBaseText = inputEl.value.trim();
-    speechRecognition.lang = "en-GB";
+    speechRecognition.lang = getSpeechRecognitionLang();
     setVoiceStatus("");
 
     try {

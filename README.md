@@ -132,9 +132,28 @@ Copy `.env.example` to `.env`:
 | `EXTRACTOR_PROVIDER` | `mock` | `mock`, `openai`, or `regex` |
 | `LLM_PROVIDER` | `mock` | `mock` or `openai` |
 | `OPENAI_API_KEY` | — | Required for OpenAI providers; set in AWS for production |
+| `APP_VERSION` | `dev` | Release label exposed by `/version` |
+| `APP_ENV` | `development` | Environment label exposed by `/version` |
+| `ANALYSE_TIMEOUT_SECONDS` | `30` | Max seconds before `/analyse` returns HTTP 504 |
+| `MAX_INPUT_CHARS` | `5000` | Maximum accepted input length for `/analyse` |
 | `RUN_LIVE_LLM_TESTS` | `false` | Set `true` to run optional live OpenAI tests |
 
 Never commit `.env` or real API keys.
+
+---
+
+## Backend reliability
+
+Production-style deployment improvements for observability and safer failure handling:
+
+- **`GET /health`** — Lightweight container health check for ECS and load balancers. Returns static JSON only; does not call OpenAI, run the analysis pipeline, or check external APIs.
+- **`GET /version`** — Exposes safe runtime metadata: service name, `APP_VERSION`, `APP_ENV`, and configured extractor/LLM providers. Never includes secrets such as `OPENAI_API_KEY`.
+- **Startup logs** — On container start, logs app version, environment, provider selection, and whether the frontend index file exists (including the static directory path). Logs go to stdout for AWS CloudWatch. Secrets are never logged.
+- **`POST /analyse` timeout** — Controlled by `ANALYSE_TIMEOUT_SECONDS` (default 30). Slow provider calls return HTTP 504 with a stable JSON error instead of hanging indefinitely.
+- **Provider failure handling** — OpenAI/provider exceptions are logged server-side with stack traces but return controlled JSON errors (`ANALYSIS_FAILED`, `PROVIDER_CONFIGURATION_ERROR`) without exposing raw exception text to clients.
+- **Input guardrails** — Empty or whitespace-only input returns HTTP 400 (`EMPTY_INPUT`). Input longer than `MAX_INPUT_CHARS` returns HTTP 413 (`INPUT_TOO_LARGE`).
+
+These changes support production-style deployment, observability, and safer failure handling while keeping successful mock-provider analysis behaviour compatible with the existing frontend.
 
 ---
 
@@ -143,7 +162,8 @@ Never commit `.env` or real API keys.
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/` | Frontend UI |
-| `GET` | `/health` | Health check for containers and load balancers |
+| `GET` | `/health` | Lightweight container health check (no OpenAI calls) |
+| `GET` | `/version` | Safe runtime metadata (version, environment, providers) |
 | `POST` | `/analyse` | Run extraction, rules, explanation, and safety validation |
 
 **Example**

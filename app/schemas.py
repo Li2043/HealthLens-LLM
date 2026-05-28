@@ -10,7 +10,7 @@ RiskLevel = Literal["low", "moderate", "high"]
 
 
 class HealthInputRequest(BaseModel):
-    text: str = Field(..., min_length=1, description="Free-text health input (demo/sample only)")
+    text: str = Field(..., description="Free-text health input (demo/sample only)")
 
 
 class FieldEvidence(BaseModel):

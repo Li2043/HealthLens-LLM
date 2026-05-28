@@ -203,6 +203,20 @@ RUN_LIVE_LLM_TESTS=false
 | Public access | Enabled for portfolio demo |
 | Secrets | Store `OPENAI_API_KEY` in AWS Secrets Manager or encrypted task env |
 
+ECS Express Mode and load balancers should use **`GET /health`** as the health check path. This endpoint is static and does not call OpenAI.
+
+### Useful runtime environment variables
+
+| Variable | Purpose |
+|----------|---------|
+| `APP_VERSION` | Release label returned by `/version` |
+| `APP_ENV` | Environment label returned by `/version` |
+| `EXTRACTOR_PROVIDER` | Extraction backend (`mock`, `openai`, `regex`) |
+| `LLM_PROVIDER` | Explanation backend (`mock`, `openai`) |
+| `ANALYSE_TIMEOUT_SECONDS` | Max seconds before `/analyse` returns HTTP 504 |
+| `MAX_INPUT_CHARS` | Maximum accepted input length for `/analyse` |
+| `OPENAI_API_KEY` | OpenAI credential — set only in AWS runtime configuration or Secrets Manager, never committed to Git |
+
 ---
 
 ## CI/CD Notes

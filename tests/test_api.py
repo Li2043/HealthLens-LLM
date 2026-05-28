@@ -19,6 +19,19 @@ def test_health_endpoint():
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok", "service": "healthlens-llm"}
+    assert "OPENAI" not in response.text
+
+
+def test_version_endpoint_default_values():
+    response = client.get("/version")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["service"] == "healthlens-llm"
+    assert "version" in data
+    assert "environment" in data
+    assert "extractor_provider" in data
+    assert "llm_provider" in data
+    assert "OPENAI_API_KEY" not in response.text
 
 
 def test_serve_frontend():
