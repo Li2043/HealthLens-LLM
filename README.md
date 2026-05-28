@@ -8,7 +8,7 @@
 
 ## Live Demo
 
-Live demo: [pending AWS ECS Express Mode deployment](https://he-bebe657ef60745a09032e339f6e24a38.ecs.eu-west-2.on.aws/)
+Live demo: [HealthLens](https://he-bebe657ef60745a09032e339f6e24a38.ecs.eu-west-2.on.aws/)
 
 ---
 
