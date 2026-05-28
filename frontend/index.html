@@ -34,12 +34,27 @@
     <main>
       <section class="input-section">
         <label for="health-input" data-i18n="inputLabel">Sample health input (demo only)</label>
-        <textarea
-          id="health-input"
-          rows="5"
-          data-i18n-placeholder="inputPlaceholder"
-          placeholder="Try a sample below or enter your own demo text."
-        ></textarea>
+        <div class="textarea-wrap">
+          <textarea
+            id="health-input"
+            rows="5"
+            data-i18n-placeholder="inputPlaceholder"
+            placeholder="Try a sample below or enter your own demo text."
+          ></textarea>
+          <button
+            id="voice-btn"
+            type="button"
+            class="voice-btn"
+            aria-label="Voice input"
+          >
+            <span class="voice-icon" aria-hidden="true">🎤</span>
+            <span id="voice-btn-text" data-i18n="voiceBtn">Voice input</span>
+          </button>
+        </div>
+        <p id="voice-unsupported" class="voice-note hidden" data-i18n="voiceUnsupported">
+          Voice input is not supported in this browser. Please type your text instead.
+        </p>
+        <p id="voice-status" class="voice-status hidden" aria-live="polite"></p>
 
         <div class="sample-buttons">
           <span class="sample-label" data-i18n="trySample">Try a sample:</span>

@@ -116,6 +116,66 @@ textarea {
   resize: vertical;
 }
 
+.textarea-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.voice-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid #b8c9dc;
+  border-radius: 6px;
+  background: #fff;
+  color: #0f3460;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.voice-btn:hover:not(:disabled) {
+  background: #e8eef5;
+}
+
+.voice-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.voice-btn.listening {
+  background: #fff3cd;
+  border-color: #ffc107;
+  color: #664d03;
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.25);
+}
+
+.voice-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.voice-note {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.voice-status {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: #0f5132;
+  font-style: italic;
+}
+
+.voice-status.error {
+  color: #842029;
+}
+
 .sample-buttons {
   display: flex;
   flex-wrap: wrap;

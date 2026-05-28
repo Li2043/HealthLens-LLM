@@ -19,6 +19,15 @@ const I18N = {
     sampleHigh: "High risk",
     sampleBp200: "Single BP (200)",
     analyseBtn: "Analyse",
+    voiceBtn: "Voice input",
+    voiceListening: "Listening...",
+    voiceUnsupported:
+      "Voice input is not supported in this browser. Please type your text instead.",
+    voiceErrNoSpeech: "No speech detected. Please try again.",
+    voiceErrAudioCapture: "Microphone not available. Please check your audio device.",
+    voiceErrNotAllowed: "Microphone permission denied. Please allow access and try again.",
+    voiceErrGeneric: "Voice input failed. Please type your text instead.",
+    voiceErrUnsupported: "Voice input is not supported in this browser. Please type your text instead.",
     loading: "Analysing...",
     riskSummary: "Risk Summary",
     incompleteWarning: "Some measurements were incomplete or ambiguous.",
@@ -91,6 +100,14 @@ const I18N = {
     sampleHigh: "高风险",
     sampleBp200: "单项血压 (200)",
     analyseBtn: "分析",
+    voiceBtn: "语音输入",
+    voiceListening: "正在聆听...",
+    voiceUnsupported: "此浏览器不支持语音输入，请改为手动输入。",
+    voiceErrNoSpeech: "未检测到语音，请重试。",
+    voiceErrAudioCapture: "无法使用麦克风，请检查音频设备。",
+    voiceErrNotAllowed: "麦克风权限被拒绝，请允许访问后重试。",
+    voiceErrGeneric: "语音输入失败，请改为手动输入。",
+    voiceErrUnsupported: "此浏览器不支持语音输入，请改为手动输入。",
     loading: "分析中...",
     riskSummary: "风险摘要",
     incompleteWarning: "部分测量数据不完整或存在歧义。",
@@ -173,6 +190,14 @@ const safetyCheckListEl = document.getElementById("safety-check-list");
 const structuredInputEl = document.getElementById("structured-input");
 const riskResultEl = document.getElementById("risk-result");
 const langToggleBtn = document.getElementById("lang-toggle");
+const voiceBtn = document.getElementById("voice-btn");
+const voiceBtnText = document.getElementById("voice-btn-text");
+const voiceUnsupportedEl = document.getElementById("voice-unsupported");
+const voiceStatusEl = document.getElementById("voice-status");
+
+let speechRecognition = null;
+let isListening = false;
+let voiceBaseText = "";
 
 function t(key) {
   const parts = key.split(".");
@@ -211,6 +236,125 @@ function applyStaticTranslations() {
 
   langToggleBtn.classList.toggle("zh", currentLang === "zh");
   langToggleBtn.setAttribute("aria-pressed", currentLang === "zh" ? "true" : "false");
+
+  if (!isListening && voiceBtn && !voiceBtn.classList.contains("hidden")) {
+    voiceBtnText.textContent = t("voiceBtn");
+    voiceBtn.setAttribute("aria-label", t("voiceBtn"));
+  }
+}
+
+function setVoiceStatus(message, isError = false) {
+  if (!message) {
+    hide(voiceStatusEl);
+    voiceStatusEl.textContent = "";
+    voiceStatusEl.classList.remove("error");
+    return;
+  }
+  voiceStatusEl.textContent = message;
+  voiceStatusEl.classList.toggle("error", isError);
+  show(voiceStatusEl);
+}
+
+function setListeningState(listening) {
+  isListening = listening;
+  voiceBtn.classList.toggle("listening", listening);
+  voiceBtn.setAttribute("aria-pressed", listening ? "true" : "false");
+  voiceBtnText.textContent = listening ? t("voiceListening") : t("voiceBtn");
+  if (listening) {
+    setVoiceStatus(t("voiceListening"));
+  }
+}
+
+function appendTranscriptToTextarea(finalTranscript, interimTranscript = "") {
+  const prefix = voiceBaseText ? `${voiceBaseText} ` : "";
+  const combined = `${prefix}${finalTranscript}${interimTranscript}`.trim();
+  inputEl.value = combined;
+}
+
+function handleSpeechError(errorCode) {
+  const errorMessages = {
+    "no-speech": t("voiceErrNoSpeech"),
+    "audio-capture": t("voiceErrAudioCapture"),
+    "not-allowed": t("voiceErrNotAllowed"),
+  };
+  setVoiceStatus(errorMessages[errorCode] || t("voiceErrGeneric"), true);
+}
+
+function initSpeechRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    hide(voiceBtn);
+    show(voiceUnsupportedEl);
+    return;
+  }
+
+  hide(voiceUnsupportedEl);
+  show(voiceBtn);
+
+  speechRecognition = new SpeechRecognition();
+  speechRecognition.lang = "en-GB";
+  speechRecognition.interimResults = true;
+  speechRecognition.continuous = false;
+
+  speechRecognition.onstart = () => {
+    setListeningState(true);
+  };
+
+  speechRecognition.onend = () => {
+    setListeningState(false);
+    if (!voiceStatusEl.classList.contains("error")) {
+      setVoiceStatus("");
+    }
+  };
+
+  speechRecognition.onerror = (event) => {
+    if (event.error === "aborted") {
+      return;
+    }
+    handleSpeechError(event.error);
+    setListeningState(false);
+  };
+
+  speechRecognition.onresult = (event) => {
+    let finalTranscript = "";
+    let interimTranscript = "";
+
+    for (let i = event.resultIndex; i < event.results.length; i += 1) {
+      const result = event.results[i];
+      const transcript = result[0].transcript;
+      if (result.isFinal) {
+        finalTranscript += transcript;
+      } else {
+        interimTranscript += transcript;
+      }
+    }
+
+    if (finalTranscript) {
+      voiceBaseText = voiceBaseText
+        ? `${voiceBaseText} ${finalTranscript.trim()}`
+        : finalTranscript.trim();
+    }
+
+    appendTranscriptToTextarea("", interimTranscript);
+  };
+
+  voiceBtn.addEventListener("click", () => {
+    if (isListening) {
+      speechRecognition.stop();
+      return;
+    }
+
+    hide(errorEl);
+    voiceBaseText = inputEl.value.trim();
+    speechRecognition.lang = "en-GB";
+    setVoiceStatus("");
+
+    try {
+      speechRecognition.start();
+    } catch (err) {
+      setVoiceStatus(t("voiceErrUnsupported"), true);
+    }
+  });
 }
 
 function setLanguage(lang) {
@@ -392,3 +536,4 @@ langToggleBtn.addEventListener("click", toggleLanguage);
 analyseBtn.addEventListener("click", analyse);
 
 applyStaticTranslations();
+initSpeechRecognition();

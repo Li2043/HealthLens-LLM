@@ -56,6 +56,7 @@ All processing happens **in memory only**. Nothing is persisted to a database or
 | Explanation | MockLLMService, OpenAILLMService |
 | Safety | Regex phrase validation (`safety_validator.py`) |
 | Frontend | HTML, CSS, vanilla JavaScript served by FastAPI |
+| Voice input | Browser-based speech-to-text via Web Speech API (typed-input fallback) |
 | Container | Docker |
 | Testing | pytest |
 | CI/CD | GitHub Actions |
@@ -87,6 +88,8 @@ uvicorn app.main:app --reload --env-file .env
 ```
 
 Open [http://127.0.0.1:8000](http://127.0.0.1:8000).
+
+Browser-based speech-to-text input using the Web Speech API, with typed-input fallback for unsupported browsers. Click the microphone button near the text area to dictate demo input in the browser. No audio is sent to the backend.
 
 ### 3. Run tests
 
