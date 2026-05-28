@@ -24,7 +24,7 @@ def test_health_endpoint():
 def test_serve_frontend():
     response = client.get("/")
     assert response.status_code == 200
-    assert "HealthSignal Workflow" in response.text
+    assert "HealthLens-LLM" in response.text
 
 
 def test_analyse_returns_200():

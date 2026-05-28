@@ -5,26 +5,156 @@ const SAMPLES = {
   bp200: "My blood pressure is 200",
 };
 
-const FLAG_LABELS = {
-  very_high_systolic_bp: "Very high systolic blood pressure",
-  very_high_diastolic_bp: "Very high diastolic blood pressure",
-  elevated_blood_pressure: "Elevated blood pressure",
-  very_elevated_heart_rate: "Very elevated heart rate",
-  elevated_heart_rate: "Elevated heart rate",
-  borderline_heart_rate: "Borderline heart rate",
-  anxiety_or_stress_flag: "Anxiety or stress",
-  low_mood_flag: "Low mood",
-  poor_sleep: "Poor sleep",
-  incomplete_measurement: "Incomplete measurement",
+const I18N = {
+  en: {
+    title: "HealthLens-LLM",
+    subtitle:
+      "Python workflow prototype for LLM-assisted extraction, rule-based checks, and LLM safety testing.",
+    notice: "Prototype only. Not medical advice. No personal health data is stored.",
+    inputLabel: "Sample health input (demo only)",
+    inputPlaceholder: "Try a sample below or enter your own demo text.",
+    trySample: "Try a sample:",
+    sampleLow: "Low risk",
+    sampleModerate: "Moderate risk",
+    sampleHigh: "High risk",
+    sampleBp200: "Single BP (200)",
+    analyseBtn: "Analyse",
+    loading: "Analysing...",
+    riskSummary: "Risk Summary",
+    incompleteWarning: "Some measurements were incomplete or ambiguous.",
+    extractionEvidence: "Extraction Evidence",
+    llmExplanation: "LLM Explanation",
+    safetyCheck: "Safety Check",
+    technicalDetails: "Technical Details",
+    structuredInput: "Structured Input",
+    riskResult: "Risk Result",
+    footer: "Software engineering prototype — not a real health risk assessment tool.",
+    noFlags: "No rule-based flags detected.",
+    detectedSignals: "Detected signals:",
+    noEvidence: "No extraction evidence available.",
+    notMentioned: "not mentioned",
+    source: "Source",
+    sourceUnavailable: "Source: not available",
+    notePrefix: "Note:",
+    riskLevel: { low: "low", moderate: "moderate", high: "high" },
+    riskBadge: "{level} risk",
+    extractorProvider: "Extractor provider",
+    explanationProvider: "Explanation provider",
+    dataStorage: "Data storage: none",
+    warningPrefix: "Warning:",
+    overall: "Overall",
+    passed: "Passed",
+    failed: "Failed",
+    disclaimerIncluded: "Disclaimer included",
+    diagnosticLanguage: "Diagnostic language detected",
+    medicationAdvice: "Medication advice detected",
+    yes: "Yes",
+    no: "No",
+    errEmptyInput: "Please enter some sample health text or choose a sample button.",
+    errGeneric: "Something went wrong. Please try again.",
+    errRequestFailed: "Request failed ({status})",
+    flags: {
+      very_high_systolic_bp: "Very high systolic blood pressure",
+      very_high_diastolic_bp: "Very high diastolic blood pressure",
+      elevated_blood_pressure: "Elevated blood pressure",
+      very_elevated_heart_rate: "Very elevated heart rate",
+      elevated_heart_rate: "Elevated heart rate",
+      borderline_heart_rate: "Borderline heart rate",
+      anxiety_or_stress_flag: "Anxiety or stress",
+      low_mood_flag: "Low mood",
+      poor_sleep: "Poor sleep",
+      incomplete_measurement: "Incomplete measurement",
+    },
+    fields: {
+      heart_rate: "Heart rate",
+      systolic_bp: "Systolic BP",
+      diastolic_bp: "Diastolic BP",
+      mood: "Mood",
+      sleep_quality: "Sleep quality",
+    },
+    status: {
+      absent: "absent",
+      partial: "partial",
+      complete: "complete",
+      ambiguous: "ambiguous",
+    },
+  },
+  zh: {
+    title: "HealthLens-LLM",
+    subtitle: "Python 工作流原型：LLM 辅助结构化提取、规则引擎检查与 LLM 安全测试。",
+    notice: "仅供原型演示，非医疗建议。不存储任何个人健康数据。",
+    inputLabel: "示例健康输入（仅供演示）",
+    inputPlaceholder: "点击下方样例，或输入你自己的演示文本。",
+    trySample: "试试样例：",
+    sampleLow: "低风险",
+    sampleModerate: "中风险",
+    sampleHigh: "高风险",
+    sampleBp200: "单项血压 (200)",
+    analyseBtn: "分析",
+    loading: "分析中...",
+    riskSummary: "风险摘要",
+    incompleteWarning: "部分测量数据不完整或存在歧义。",
+    extractionEvidence: "提取依据",
+    llmExplanation: "LLM 解释",
+    safetyCheck: "安全检查",
+    technicalDetails: "技术详情",
+    structuredInput: "结构化输入",
+    riskResult: "风险结果",
+    footer: "软件工程原型 — 非真实健康风险评估工具。",
+    noFlags: "未检测到规则标志。",
+    detectedSignals: "检测到的信号：",
+    noEvidence: "暂无提取依据。",
+    notMentioned: "未提及",
+    source: "来源",
+    sourceUnavailable: "来源：不可用",
+    notePrefix: "说明：",
+    riskLevel: { low: "低", moderate: "中", high: "高" },
+    riskBadge: "{level}风险",
+    extractorProvider: "提取提供者",
+    explanationProvider: "解释提供者",
+    dataStorage: "数据存储：无",
+    warningPrefix: "警告：",
+    overall: "总体",
+    passed: "通过",
+    failed: "未通过",
+    disclaimerIncluded: "包含免责声明",
+    diagnosticLanguage: "检测到诊断性语言",
+    medicationAdvice: "检测到用药建议",
+    yes: "是",
+    no: "否",
+    errEmptyInput: "请输入示例健康文本，或选择一个样例按钮。",
+    errGeneric: "出现错误，请重试。",
+    errRequestFailed: "请求失败 ({status})",
+    flags: {
+      very_high_systolic_bp: "收缩压非常高",
+      very_high_diastolic_bp: "舒张压非常高",
+      elevated_blood_pressure: "血压升高",
+      very_elevated_heart_rate: "心率明显偏高",
+      elevated_heart_rate: "心率偏高",
+      borderline_heart_rate: "心率临界偏高",
+      anxiety_or_stress_flag: "焦虑或压力",
+      low_mood_flag: "情绪低落",
+      poor_sleep: "睡眠不佳",
+      incomplete_measurement: "测量不完整",
+    },
+    fields: {
+      heart_rate: "心率",
+      systolic_bp: "收缩压",
+      diastolic_bp: "舒张压",
+      mood: "情绪",
+      sleep_quality: "睡眠质量",
+    },
+    status: {
+      absent: "未提及",
+      partial: "部分",
+      complete: "完整",
+      ambiguous: "歧义",
+    },
+  },
 };
 
-const FIELD_LABELS = {
-  heart_rate: "Heart rate",
-  systolic_bp: "Systolic BP",
-  diastolic_bp: "Diastolic BP",
-  mood: "Mood",
-  sleep_quality: "Sleep quality",
-};
+let currentLang = localStorage.getItem("healthlens-lang") || "en";
+let lastResultData = null;
 
 const inputEl = document.getElementById("health-input");
 const analyseBtn = document.getElementById("analyse-btn");
@@ -42,6 +172,22 @@ const explanationEl = document.getElementById("explanation");
 const safetyCheckListEl = document.getElementById("safety-check-list");
 const structuredInputEl = document.getElementById("structured-input");
 const riskResultEl = document.getElementById("risk-result");
+const langToggleBtn = document.getElementById("lang-toggle");
+
+function t(key) {
+  const parts = key.split(".");
+  let value = I18N[currentLang];
+  for (const part of parts) {
+    value = value?.[part];
+  }
+  if (value === undefined) {
+    value = I18N.en;
+    for (const part of parts) {
+      value = value?.[part];
+    }
+  }
+  return value ?? key;
+}
 
 function show(el) {
   el.classList.remove("hidden");
@@ -49,6 +195,32 @@ function show(el) {
 
 function hide(el) {
   el.classList.add("hidden");
+}
+
+function applyStaticTranslations() {
+  document.documentElement.lang = currentLang === "zh" ? "zh-CN" : "en";
+  document.title = t("title");
+
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    el.textContent = t(el.dataset.i18n);
+  });
+
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
+
+  langToggleBtn.classList.toggle("zh", currentLang === "zh");
+  langToggleBtn.setAttribute("aria-pressed", currentLang === "zh" ? "true" : "false");
+}
+
+function setLanguage(lang) {
+  if (lang !== "en" && lang !== "zh") return;
+  currentLang = lang;
+  localStorage.setItem("healthlens-lang", lang);
+  applyStaticTranslations();
+  if (lastResultData) {
+    renderResults(lastResultData);
+  }
 }
 
 function showError(message) {
@@ -67,41 +239,41 @@ function stripMarkdown(text) {
 
 function formatFlagList(flags) {
   if (!flags || flags.length === 0) {
-    return "<p class='summary-text'>No rule-based flags detected.</p>";
+    return `<p class='summary-text'>${t("noFlags")}</p>`;
   }
   const items = flags
-    .map((flag) => `<li>${FLAG_LABELS[flag] || flag.replaceAll("_", " ")}</li>`)
+    .map((flag) => `<li>${t(`flags.${flag}`) || flag.replaceAll("_", " ")}</li>`)
     .join("");
-  return `<p class='summary-text'><strong>Detected signals:</strong></p><ul class='flag-list'>${items}</ul>`;
+  return `<p class='summary-text'><strong>${t("detectedSignals")}</strong></p><ul class='flag-list'>${items}</ul>`;
 }
 
 function renderExtractionEvidence(evidence) {
   if (!evidence || evidence.length === 0) {
-    extractionEvidenceEl.innerHTML = "<li>No extraction evidence available.</li>";
+    extractionEvidenceEl.innerHTML = `<li>${t("noEvidence")}</li>`;
     return;
   }
 
   extractionEvidenceEl.innerHTML = evidence
     .map((item) => {
-      const label = FIELD_LABELS[item.field] || item.field;
-      const valueText =
-        item.status === "absent"
-          ? "not mentioned"
-          : item.value ?? "not mentioned";
-      const evidenceText = item.evidence ? `Source: "${item.evidence}"` : "Source: not available";
-      return `<li><span class="evidence-field">${label}:</span> ${valueText}. <span class="evidence-status">(${item.status}) ${evidenceText}</span></li>`;
+      const label = t(`fields.${item.field}`) || item.field;
+      const valueText = item.status === "absent" ? t("notMentioned") : item.value ?? t("notMentioned");
+      const statusText = t(`status.${item.status}`) || item.status;
+      const evidenceText = item.evidence
+        ? `${t("source")}: "${item.evidence}"`
+        : t("sourceUnavailable");
+      return `<li><span class="evidence-field">${label}:</span> ${valueText}. <span class="evidence-status">(${statusText}) ${evidenceText}</span></li>`;
     })
     .join("");
 }
 
 function renderProviderStatus(data) {
   const lines = [
-    `Extractor provider: ${data.extractor_provider}`,
-    `Explanation provider: ${data.llm_provider}`,
-    "Data storage: none",
+    `${t("extractorProvider")}: ${data.extractor_provider}`,
+    `${t("explanationProvider")}: ${data.llm_provider}`,
+    t("dataStorage"),
   ];
   if (data.provider_warning) {
-    lines.push(`Warning: ${data.provider_warning}`);
+    lines.push(`${t("warningPrefix")} ${data.provider_warning}`);
   }
   providerStatusEl.innerHTML = lines.map((line) => `<div>${line}</div>`).join("");
 }
@@ -109,24 +281,24 @@ function renderProviderStatus(data) {
 function renderSafetyCheck(safety) {
   const items = [
     {
-      label: "Overall",
+      label: t("overall"),
       pass: safety.passed,
-      text: safety.passed ? "Passed" : "Failed",
+      text: safety.passed ? t("passed") : t("failed"),
     },
     {
-      label: "Disclaimer included",
+      label: t("disclaimerIncluded"),
       pass: safety.contains_disclaimer,
-      text: safety.contains_disclaimer ? "Yes" : "No",
+      text: safety.contains_disclaimer ? t("yes") : t("no"),
     },
     {
-      label: "Diagnostic language detected",
+      label: t("diagnosticLanguage"),
       pass: !safety.contains_diagnostic_language,
-      text: safety.contains_diagnostic_language ? "Yes" : "No",
+      text: safety.contains_diagnostic_language ? t("yes") : t("no"),
     },
     {
-      label: "Medication advice detected",
+      label: t("medicationAdvice"),
       pass: !safety.contains_medication_advice,
-      text: safety.contains_medication_advice ? "Yes" : "No",
+      text: safety.contains_medication_advice ? t("yes") : t("no"),
     },
   ];
 
@@ -136,11 +308,13 @@ function renderSafetyCheck(safety) {
 }
 
 function renderResults(data) {
+  lastResultData = data;
   const { structured_input, risk_result, explanation, safety_check } = data;
 
   renderProviderStatus(data);
 
-  riskLevelBadgeEl.textContent = `${risk_result.risk_level} risk`;
+  const levelLabel = t(`riskLevel.${risk_result.risk_level}`);
+  riskLevelBadgeEl.textContent = t("riskBadge").replace("{level}", levelLabel);
   riskLevelBadgeEl.className = `risk-badge ${risk_result.risk_level}`;
 
   if (structured_input.missing_or_ambiguous_fields?.length) {
@@ -153,7 +327,7 @@ function renderResults(data) {
   renderExtractionEvidence(structured_input.extraction_evidence);
 
   if (structured_input.extraction_notes) {
-    extractionNoteEl.textContent = `Note: ${structured_input.extraction_notes}`;
+    extractionNoteEl.textContent = `${t("notePrefix")} ${structured_input.extraction_notes}`;
     show(extractionNoteEl);
   } else {
     extractionNoteEl.textContent = "";
@@ -171,7 +345,7 @@ function renderResults(data) {
 async function analyse() {
   const text = inputEl.value.trim();
   if (!text) {
-    showError("Please enter some sample health text or choose a sample button.");
+    showError(t("errEmptyInput"));
     hide(resultsEl);
     return;
   }
@@ -190,13 +364,13 @@ async function analyse() {
 
     if (!response.ok) {
       const detail = await response.text();
-      throw new Error(detail || `Request failed (${response.status})`);
+      throw new Error(detail || t("errRequestFailed").replace("{status}", response.status));
     }
 
     renderResults(await response.json());
     show(resultsEl);
   } catch (err) {
-    showError(err.message || "Something went wrong. Please try again.");
+    showError(err.message || t("errGeneric"));
   } finally {
     hide(loadingEl);
     analyseBtn.disabled = false;
@@ -205,10 +379,16 @@ async function analyse() {
 
 document.querySelectorAll(".sample-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
-    const key = btn.dataset.sample;
-    inputEl.value = SAMPLES[key] || "";
+    inputEl.value = SAMPLES[btn.dataset.sample] || "";
     hide(errorEl);
   });
 });
 
+function toggleLanguage() {
+  setLanguage(currentLang === "en" ? "zh" : "en");
+}
+
+langToggleBtn.addEventListener("click", toggleLanguage);
 analyseBtn.addEventListener("click", analyse);
+
+applyStaticTranslations();

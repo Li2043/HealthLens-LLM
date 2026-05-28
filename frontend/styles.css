@@ -19,9 +19,69 @@ body {
 }
 
 header h1 {
-  margin: 0 0 0.35rem;
+  margin: 0;
   font-size: 1.85rem;
   color: #16213e;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.35rem;
+}
+
+.lang-toggle {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  width: 7.5rem;
+  height: 2.25rem;
+  padding: 0.2rem;
+  border: 1px solid #b8c9dc;
+  border-radius: 999px;
+  background: #e8eef5;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.lang-toggle:focus-visible {
+  outline: 2px solid #0f3460;
+  outline-offset: 2px;
+}
+
+.lang-toggle-indicator {
+  position: absolute;
+  top: 0.2rem;
+  left: 0.2rem;
+  width: calc(50% - 0.2rem);
+  height: calc(100% - 0.4rem);
+  border-radius: 999px;
+  background: #0f3460;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease;
+}
+
+.lang-toggle.zh .lang-toggle-indicator {
+  transform: translateX(100%);
+}
+
+.lang-toggle-option {
+  position: relative;
+  z-index: 1;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: center;
+  color: #0f3460;
+  transition: color 0.2s ease;
+  user-select: none;
+}
+
+.lang-toggle:not(.zh) .lang-toggle-option:first-child,
+.lang-toggle.zh .lang-toggle-option:last-child {
+  color: #fff;
 }
 
 .subtitle {

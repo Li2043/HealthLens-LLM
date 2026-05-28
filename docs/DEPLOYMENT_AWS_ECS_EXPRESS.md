@@ -87,6 +87,64 @@ docker tag healthlens-llm:latest <account-id>.dkr.ecr.eu-west-2.amazonaws.com/he
 docker push <account-id>.dkr.ecr.eu-west-2.amazonaws.com/healthlens-llm:latest
 ```
 
+### Push Docker image to Amazon ECR from Windows PowerShell
+
+If you are on Windows, use the helper script at `scripts/push_ecr.ps1` to automate the ECR push.
+
+**Prerequisites**
+
+- Docker Desktop installed and running
+- AWS CLI v2 installed
+- AWS credentials configured locally, for example with `aws configure` or an AWS SSO profile
+- No secrets are stored in the script; it uses your existing local AWS identity
+
+**Default settings used by the script**
+
+| Setting | Default |
+|---------|---------|
+| AWS region | `eu-west-2` |
+| ECR repository | `healthlens-llm` |
+| Local Docker image | `healthlens-llm` |
+| Image tag | `latest` |
+
+You can override defaults with environment variables before running the script:
+
+```powershell
+$env:AWS_REGION = "eu-west-2"
+$env:ECR_REPOSITORY = "healthlens-llm"
+$env:DOCKER_IMAGE_NAME = "healthlens-llm"
+$env:IMAGE_TAG = "latest"
+```
+
+**Run the script**
+
+From the repository root:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/push_ecr.ps1
+```
+
+The script will:
+
+1. Check that Docker and AWS CLI are installed
+2. Check that Docker Engine is running
+3. Verify your AWS account with `aws sts get-caller-identity`
+4. Create the ECR repository if needed
+5. Log Docker in to Amazon ECR
+6. Build, tag, and push the image
+7. Print the final ECR image URI for use in ECS Express Mode
+
+Example output:
+
+```text
+ECR image URI:
+123456789012.dkr.ecr.eu-west-2.amazonaws.com/healthlens-llm:latest
+```
+
+Use that URI when creating or updating your ECS Express Mode service.
+
+**Note:** On Windows PowerShell, a missing ECR repository can write to stderr and look like an error even when the script continues correctly. The helper script handles this case and creates the repository automatically.
+
 ### 3. Run with ECS Express Mode
 
 ECS Express Mode is suitable for a portfolio deployment because it:
@@ -166,7 +224,7 @@ It does **not** push images to ECR yet. That keeps AWS credentials out of GitHub
 - [ ] Confirm `/` loads the frontend
 - [ ] Confirm `POST /analyse` works with mock providers
 - [ ] Create ECR repository
-- [ ] Push image to ECR
+- [ ] Push image to ECR (`scripts/push_ecr.ps1` on Windows, or manual AWS CLI commands)
 - [ ] Create ECS Express Mode service
 - [ ] Set runtime env vars in AWS
 - [ ] Verify public HTTPS URL
