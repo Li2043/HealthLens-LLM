@@ -14,7 +14,7 @@ It demonstrates how to build, evaluate, and deploy a safety-conscious LLM workfl
 
 ## Live Demo
 
-- **Live site:** `https://he-bebe657ef60745a09032e339f6e24a38.ecs.eu-west-2.on.aws/`
+- **Live site:** [Health-LLM](https://he-bebe657ef60745a09032e339f6e24a38.ecs.eu-west-2.on.aws/)
 - **Health check:** `GET /health`
 - **API docs:** `GET /docs` if enabled by FastAPI
 
